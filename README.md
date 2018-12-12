@@ -26,4 +26,4 @@ from the experience in learning an unpopular music
 instrument that requires almost zero knowledge
 about music theory.
 
-Create a issue if there is something wrong.
+Create an issue if there is something wrong.
