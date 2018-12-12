@@ -1,28 +1,59 @@
 import React, { Component } from 'react';
+// import { BrowserRouter as Router, Route, NavLink, Prompt } from "react-router-dom";
+import { TransitionGroup, CSSTransition } from "react-transition-group";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  NavLink,
+  Redirect
+} from "react-router-dom";
+import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import pink from '@material-ui/core/colors/pink';
+import blue from '@material-ui/core/colors/blue';
 import logo from './logo.svg';
 import './App.css';
+import TonePlayer from './components/TonePlayer'
+import TopMenu from './components/TopMenu'
+
+const theme = createMuiTheme({
+    palette: {
+      primary: blue,
+      secondary: pink,
+    },
+  });
 
 class App extends Component {
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <MuiThemeProvider theme={theme}>
+        <Router>
+          <div className="App">
+            <div id="dashboard">
+              <TopMenu />
+              <div className="content">
+                <Route exact path="/" component={Home} />
+                <Route exact path="/Tone" component={TonePlayer} />
+                {/* <Route exact path="/Pitch" component={PitchTrainer} /> */}
+              </div>
+            </div>
+          </div>
+        </Router>
+      </MuiThemeProvider>
     );
   }
+}
+
+class Home extends React.Component {
+	render() {
+		return (
+    <header className="App-header">
+      <img src={logo} className="App-logo" alt="logo" />
+      <p>
+        This is a site about ear training that is still under development.
+      </p>
+    </header>);
+	}
 }
 
 export default App;

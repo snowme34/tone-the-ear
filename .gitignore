@@ -21,3 +21,18 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# tmp files
+/local
+
+# vscode
+.vscode/*
+*.code-workspace
+
+# firebase
+firebase-debug.log
+.firebase
+.firebaserc
+firebase.json
+functions/
+firestore.*

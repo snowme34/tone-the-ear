@@ -3,9 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@material-ui/core": "^3.6.2",
+    "@material-ui/icons": "^3.0.1",
+    "midi-player-js": "^2.0.5",
+    "midi-writer-js": "^1.5.2",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
-    "react-scripts": "2.1.1"
+    "react-piano-component": "^0.1.4",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "2.1.1",
+    "soundfont-player": "^0.11.0",
+    "teoria": "^2.5.0"
   },
   "scripts": {
     "start": "react-scripts start",

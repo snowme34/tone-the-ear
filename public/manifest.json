@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Tone the Ear",
+  "name": "A small app about ear training",
   "icons": [
     {
       "src": "favicon.ico",
