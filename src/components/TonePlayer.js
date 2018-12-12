@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 // import PropTypes from 'prop-types';
 import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
+// import Grid from '@material-ui/core/Grid';
 // import { Sampler } from 'tone';
 // import {note, chord} from 'teoria'
 import Piano from 'react-piano-component';
@@ -58,6 +58,9 @@ function NaturalKey({ isPlaying, text, eventHandlers }) {
   );
 }
 
+// TODO
+// improve keyboard support
+// note of keyboard should be displayed and properly stopped
 class ThePiano extends Component {
   render() {
     const startNote = this.props.startNote, endNote = this.props.endNote;
@@ -138,6 +141,8 @@ class ThePiano extends Component {
 }
 
 class TonePlayer extends Component {
+  // TODO
+  // add options for user to choose start and end notes
   constructor(props) {
     super(props);
     this.state = {
