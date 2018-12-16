@@ -11,6 +11,7 @@ In development.
 ## Features
 
 * A piano that displays the note being played
+  * Supports display mutiple notes at the same time
 * More to come
 
 ## Technologies Used
