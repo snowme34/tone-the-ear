@@ -1,6 +1,14 @@
 import React, { Component } from 'react';
 // import PropTypes from 'prop-types';
 import Paper from '@material-ui/core/Paper';
+import Input from '@material-ui/core/Input';
+import OutlinedInput from '@material-ui/core/OutlinedInput';
+import FilledInput from '@material-ui/core/FilledInput';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
 // import Grid from '@material-ui/core/Grid';
 // import { Sampler } from 'tone';
 // import {note, chord} from 'teoria'
@@ -9,7 +17,7 @@ import NoteDisplay from '../components/NoteDisplay'
 import getKeyMap from '../util/getKeyMap'
 // import KEY2MAP from '../constants/KEY2MAP'
 // import getNotesBetween from '../util/getNotesBetween'
-// import RANGES from '../constants/RANGES'
+import RANGES from '../constants/RANGES'
 // import NOTERANGES from '../constants/NOTERANGES'
 import "./TonePlayer.css"
 
@@ -24,10 +32,20 @@ function PianoContainer({ children }) {
   );
 }
 
-// TODO
-// beautify backspace
+// beautify the key text
+function getUnicodeText(text) {
+  switch (text) {
+    case "BACKSPACE":
+      return '\u232B';
+    case "ENTER":
+      return '\u23CE';
+    default:
+      return text;
+  }
+}
+
 function AccidentalKey({ isPlaying, text, eventHandlers }) {
-  let content = (text==="BACKSPACE") ? "<-" : text;
+  let content = getUnicodeText(text);
   return (
     <div className={'the-piano__accidental-key__wrapper'}>
       <button
@@ -42,10 +60,8 @@ function AccidentalKey({ isPlaying, text, eventHandlers }) {
   );
 }
 
-// TODO
-// beautify backspace
 function NaturalKey({ isPlaying, text, eventHandlers }) {
-  let content = (text==="BACKSPACE") ? "<-" : text;
+  let content = getUnicodeText(text);
   return (
     <button
       className={`the-piano__natural-key ${
@@ -66,12 +82,6 @@ class ThePiano extends Component {
     const startNote = this.props.startNote, endNote = this.props.endNote;
     let handleNotePlay = (note) => this.props.handleNotePlay(note), handleNoteStop = (note) => this.props.handleNoteStop(note);
     let keyMapping = getKeyMap(startNote,endNote);
-    // const notesBetween = getNotesBetween(startNote,endNote);
-    // const idx = Math.min(notesBetween.length, KEY2MAP.length);
-    // let keyMapping = {};
-    // for(let i = 0; i < idx; ++i){
-    //   keyMapping = Object.assign({[KEY2MAP[i]]:notesBetween[i]},keyMapping)
-    // }
     return (
       <Piano
         startNote={this.props.startNote}
@@ -141,16 +151,23 @@ class ThePiano extends Component {
 }
 
 class TonePlayer extends Component {
-  // TODO
-  // add options for user to choose start and end notes
   constructor(props) {
     super(props);
     this.state = {
     startNote: 'C3',
     endNote: 'C5',
     theNote: [],
+    range:"C3-C5",
     };
+    this.RANGE_LIST = RANGES.map((r) => <MenuItem key={r[1]} value={r}>{r}</MenuItem>);
   }
+  handleRangeChange = event => {
+    this.setState({ 
+      [event.target.name]: event.target.value,
+      startNote: event.target.value.substring(0,2),
+      endNote: event.target.value.substring(3),
+     });
+  };
   // TODO
   // add key-board support
   handleNotePlay(note){
@@ -178,18 +195,34 @@ class TonePlayer extends Component {
     )
   }
   render() {
-    const { classes } = this.props;
+    // const { classes } = this.props;
     return (
-      <div className="TonePlayer">
-        <Paper className="TonePlayerPaper" elevation={1}>
-          <Paper className="NoteDisplayPaper" elevation={1}>
+      <div className="tone-player">
+        <Paper className="tone-player-paper" elevation={1}>
+          <Paper className="note-display-paper" elevation={1}>
             <h1>A Musical Keyboard</h1>
             <h2>Use it to practice your ears!</h2>
-            <div className="NoteDisplay">
+
+            <form className="tone-player-form" autoComplete="off">
+              <FormControl className="tone-player-range-form-control">
+                <Select
+                  value={this.state.range}
+                  onChange={this.handleRangeChange}
+                  displayEmpty
+                  name="range"
+                  className="tone-player-range-select"
+                >
+                  {this.RANGE_LIST}
+                </Select>
+                <FormHelperText>Select the first note and the last note</FormHelperText>
+              </FormControl>
+            </form>
+
+            <div className="note-display">
               {this.renderNote(this.state.theNote)}
             </div>
           </Paper>
-          <Paper className="PianoContainerPaper" elevation={1}>
+          <Paper className="piano-container-paper" elevation={1}>
             <PianoContainer>
               <ThePiano 
                 handleNotePlay={(note) => this.handleNotePlay(note)}

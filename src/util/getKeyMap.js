@@ -32,7 +32,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B2',
         'ENTER': 'C3',
       };
-      break;
     case 1:
       return {
         'TAB': 'C2',
@@ -61,7 +60,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B3',
         'ENTER': 'C4',
       };
-      break;
     // default as case 2
     case 3:
       return {
@@ -91,7 +89,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B5',
         'ENTER': 'C6',
       }
-      break;
     case 4:
       return {
         'TAB': 'C5',
@@ -120,7 +117,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B6',
         'ENTER': 'C7',
       };
-      break;
     case 5:
       return {
         'TAB': 'C6',
@@ -149,7 +145,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B7',
         'ENTER': 'C8',
       };
-      break;
     default: // and case 2
       return {
         'TAB': 'C3',
@@ -178,7 +173,6 @@ export default function getKeyMap(startNote, endNote){
         '\\': 'B4',
         'ENTER': 'C5',
       };
-      break;
   }
 }
 
