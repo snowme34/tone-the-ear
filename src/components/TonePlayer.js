@@ -19,7 +19,7 @@ import getKeyMap from '../util/getKeyMap'
 // import getNotesBetween from '../util/getNotesBetween'
 import RANGES from '../constants/RANGES'
 // import NOTERANGES from '../constants/NOTERANGES'
-import "./TonePlayer.css"
+import './TonePlayer.css'
 
 function PianoContainer({ children }) {
   return (
@@ -35,9 +35,9 @@ function PianoContainer({ children }) {
 // beautify the key text
 function getUnicodeText(text) {
   switch (text) {
-    case "BACKSPACE":
+    case 'BACKSPACE':
       return '\u232B';
-    case "ENTER":
+    case 'ENTER':
       return '\u23CE';
     default:
       return text;
@@ -77,6 +77,8 @@ function NaturalKey({ isPlaying, text, eventHandlers }) {
 // TODO
 // improve keyboard support
 // note of keyboard should be displayed and properly stopped
+// TODO
+// use a function for ThePiano if available
 class ThePiano extends Component {
   render() {
     const startNote = this.props.startNote, endNote = this.props.endNote;
@@ -157,7 +159,7 @@ class TonePlayer extends Component {
     startNote: 'C3',
     endNote: 'C5',
     theNote: [],
-    range:"C3-C5",
+    range:'C3-C5',
     };
     this.RANGE_LIST = RANGES.map((r) => <MenuItem key={r[1]} value={r}>{r}</MenuItem>);
   }
@@ -197,20 +199,20 @@ class TonePlayer extends Component {
   render() {
     // const { classes } = this.props;
     return (
-      <div className="tone-player">
-        <Paper className="tone-player-paper" elevation={1}>
-          <Paper className="note-display-paper" elevation={1}>
+      <div className='tone-player'>
+        <Paper className='tone-player-paper' elevation={1}>
+          <Paper className='note-display-paper' elevation={1}>
             <h1>A Musical Keyboard</h1>
             <h2>Use it to practice your ears!</h2>
 
-            <form className="tone-player-form" autoComplete="off">
-              <FormControl className="tone-player-range-form-control">
+            <form className='tone-player-form' autoComplete='off'>
+              <FormControl className='tone-player-range-form-control'>
                 <Select
                   value={this.state.range}
                   onChange={this.handleRangeChange}
                   displayEmpty
-                  name="range"
-                  className="tone-player-range-select"
+                  name='range'
+                  className='tone-player-range-select'
                 >
                   {this.RANGE_LIST}
                 </Select>
@@ -218,11 +220,11 @@ class TonePlayer extends Component {
               </FormControl>
             </form>
 
-            <div className="note-display">
+            <div className='note-display'>
               {this.renderNote(this.state.theNote)}
             </div>
           </Paper>
-          <Paper className="piano-container-paper" elevation={1}>
+          <Paper className='piano-container-paper' elevation={1}>
             <PianoContainer>
               <ThePiano 
                 handleNotePlay={(note) => this.handleNotePlay(note)}
@@ -232,7 +234,6 @@ class TonePlayer extends Component {
               />
             </PianoContainer>
           </Paper>
-          {/* TODO: Add footer */}
        </Paper>
       </div>
     );
