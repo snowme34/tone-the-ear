@@ -13,8 +13,9 @@ import pink from '@material-ui/core/colors/pink';
 import blue from '@material-ui/core/colors/blue';
 import logo from './logo.svg';
 import './App.css';
-import TonePlayer from './components/TonePlayer'
 import TopMenu from './components/TopMenu'
+import TonePlayer from './components/TonePlayer'
+import PitchTrainer from './components/PitchTrainer'
 
 const theme = createMuiTheme({
     palette: {
@@ -34,10 +35,11 @@ class App extends Component {
               <div className="content">
                 <Route exact path="/" component={Home} />
                 <Route exact path="/Tone" component={TonePlayer} />
-                {/* <Route exact path="/Pitch" component={PitchTrainer} /> */}
+                <Route exact path="/Pitch" component={PitchTrainer} />
               </div>
             </div>
           </div>
+          {/* TODO: Add footer */}
         </Router>
       </MuiThemeProvider>
     );
