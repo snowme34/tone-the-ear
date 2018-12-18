@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  NavLink,
-  Redirect
-} from "react-router-dom";
+// import {
+//   BrowserRouter as Router,
+//   Switch,
+//   Route,
+//   NavLink,
+//   Redirect
+// } from "react-router-dom";
 import PropTypes from 'prop-types';
+// import { withStyles } from '@material-ui/core/styles';
+import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 // import Paper from '@material-ui/core/Paper';
 // import Input from '@material-ui/core/Input';
@@ -26,6 +28,13 @@ import ArrowRightIcon from '@material-ui/icons/ArrowRight';
 import StopIcon from '@material-ui/icons/Stop';
 import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import SkipNextIcon from '@material-ui/icons/SkipNext';
+import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+// import Paper from '@material-ui/core/Paper';
 // import pink from '@material-ui/core/colors/pink';
 // import { Sampler } from 'tone';
 // import {note, chord} from 'teoria';
@@ -58,59 +67,24 @@ function TonesCheckboxes(props){
   );
 }
 
-function PitchTrainerStart(props) {
-  return (
-    <Grid
-        container
-        spacing={32}
-        direction="column"
-        alignItems="center"
-        // justify="center"
-        style={{ minHeight: '70vh' }}
-      >
-      <Grid item xs={"auto"}>
-       <h2>Customize the training</h2>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <TonesCheckboxes tones={props.tones} handleSelection={(name) => props.handleSelection(name)}/>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <form className='pitch-trainer-num-choices-form' autoComplete='off'>
-          <FormLabel component="legend">
-            Choose the number of candidates for each question
-          </FormLabel>
-          <FormControl className='pitch-trainer-num-choices-form-control'>
-            <Select
-              value={props.numChoices}
-              onChange={props.handleNumChoices}
-              displayEmpty
-              name='numChoices'
-              className='pitch-trainer-num-choices-select'
-            >
-              {props.NUM_CHOICES_LIST}
-            </Select>
-            {/* <FormHelperText>Select the number of candidates for each note practice round</FormHelperText> */}
-          </FormControl>
-        </form>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => props.handleGameStart()}>
-        <ArrowRightIcon className="leftIcon pitch-trainer-leftIcon" />
-        Start
-        </Button>
-      </Grid>
-    </Grid>
-  );
-}
+TonesCheckboxes.propTypes = {
+  tones: PropTypes.array.isRequired,
+  handleSelection: PropTypes.func.isRequired,
+};
 
 function TonesAnswerButtons(props) {
-  let answers = [props.notePlaying], tonesChosen = [], numAns;
-  for(let i = 0; i < props.tones.length; ++i){ if(props.tones[i] && TONES[i]!==props.notePlaying) tonesChosen.push(TONES[i]); }
-  numAns = Math.min(props.numChoices-1, tonesChosen.length);
-  tonesChosen = shuffleArray(tonesChosen);
-  while (numAns--) { answers.push(tonesChosen.pop()); }
-  answers = shuffleArray(answers);
-  const answerButtons = answers.map((r) => <Grid key={r} item xs={"auto"}><Button key={r} color="default" className="pitch-trainer-button"> {r} </Button></Grid>);
+  const answerButtons = props.answers.map((r) => 
+    <Grid 
+      key={r} 
+      item xs={"auto"}>
+      <Button 
+        key={r} 
+        color="default" 
+        className="pitch-trainer-button" 
+        onClick={() => props.handleGameAnswer(r)}> 
+          {r} 
+      </Button>
+    </Grid>);
   return (
     <Grid
         container
@@ -125,46 +99,42 @@ function TonesAnswerButtons(props) {
   );
 }
 
-function PitchTrainerGame(props) {
-  return (
-    <Grid
-        container
-        spacing={32}
-        direction="column"
-        alignItems="center"
-        // justify="center"
-        style={{ minHeight: '70vh' }}
-      >
-      <Grid item xs={"auto"}>
-       <h2>Listen and select the note played</h2>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <TonesCheckboxes tones={props.tones} handleSelection={(name) => props.handleSelection(name)}/>
-      </Grid>
-      <Grid container spacing={16} direction="row" justify="center">
-        <Grid item xs={1}>
-          <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => props.handlePlayNote()}>
-          <MusicNoteIcon className="leftIcon pitch-trainer-leftIcon" />
-          Play
-          </Button>
-        </Grid>
-        <Grid item xs={1}>
-          <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => props.handleSkipNote()}>
-          <SkipNextIcon className="leftIcon pitch-trainer-leftIcon" />
-          Skip
-          </Button>
-        </Grid>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <TonesAnswerButtons numChoices={props.numChoices} tones={props.tones} notePlaying={props.notePlaying}/>
-      </Grid>
-      <Grid item xs={"auto"}>
-        <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => props.handleGameStop()}>
-        <StopIcon className="leftIcon pitch-trainer-leftIcon" />
-        End
-        </Button>
-      </Grid>
-    </Grid>
+TonesAnswerButtons.propTypes = {
+  answers: PropTypes.array.isRequired,
+  handleGameAnswer: PropTypes.func.isRequired,
+};
+
+// return a table of statistics that user may be interested in
+function PitchTrainerStatistics(props) {
+  return(
+    <Table className="pitch-trainer-stat-table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Notes Tested</TableCell>
+            <TableCell numeric>Number of Questions</TableCell>
+            <TableCell numeric>Number of Skipped Questions</TableCell>
+            <TableCell numeric>Number of Attempts</TableCell>
+            <TableCell numeric>Average Times for Correct Attempt(s)</TableCell>
+            <TableCell numeric>Accuracy (#Correct/#Questions)</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {props.rows.map(row => {
+            return (
+              <TableRow key={row.id}>
+                <TableCell component="th" scope="row">
+                  {row.note}
+                </TableCell>
+                <TableCell numeric>{row.numQ}</TableCell>
+                <TableCell numeric>{row.numS}</TableCell>
+                <TableCell numeric>{row.numA}</TableCell>
+                <TableCell numeric>{isNaN(row.averageCorrectTime)?(0):(row.averageCorrectTime)}</TableCell>
+                <TableCell numeric>{row.accuracy}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
   );
 }
 
@@ -179,12 +149,18 @@ class PitchTrainer extends Component {
       isStarted: false,
       numChoices: 3,
       notePlaying: 'C',
+      gameStartTime: 0,
+      isCorrect: false,
+      lastAnswer: -1, // -1: no ans, 0: wrong ans, 1: correct ans
+      answers: [],
       // hasTimer: false,
       // statistics for last game if not first game
       isFirstGame: true,
-      tries: [0,0,0,0,0,0,0,0,0,0,0,0],
-      triesTime: [0,0,0,0,0,0,0,0,0,0,0,0],
-      triesCorrect: [0,0,0,0,0,0,0,0,0,0,0,0],
+      statQuestions: [0,0,0,0,0,0,0,0,0,0,0,0], // how many questions shown for a tone
+      statSkips: [0,0,0,0,0,0,0,0,0,0,0,0], // how many skipped questions shown for a tone
+      statTries: [0,0,0,0,0,0,0,0,0,0,0,0], // how many tries did user made for a tone
+      statTriesTime: [0,0,0,0,0,0,0,0,0,0,0,0], // how long in total for user to decide a tone, used to calc average time
+      statCorrect: [0,0,0,0,0,0,0,0,0,0,0,0], // how many correct ans in first selection, used to calc the accuracy
     };
     this.NUM_CHOICES_LIST = Array.apply(null, {length: TONES.length}).map(Number.call, Number).map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>).slice(3);
   }
@@ -194,12 +170,24 @@ class PitchTrainer extends Component {
     this.setState({ tones: t });
   };
   handleGameStart() {
-    this.setState({isStarted: true});
+    const nextNote = this.getNextNote();
+    const answers = this.getShuffledAnswers(this.state.tones,nextNote,this.state.numChoices);
+    this.setState({
+      gameStartTime: performance.now(),
+      isStarted: true,
+      notePlaying: nextNote,
+      isCorrect: false,
+      lastAnswer: -1,
+      answers: answers,
+    }, () => this.handlePlayNote());
   }
   handleGameStop() {
     this.setState({
       isStarted: false,
-      isFirstGame: false
+      isCorrect: false,
+      isFirstGame: false,
+      lastAnswer: -1,
+      gameStartTime: 0,
     });
   }
   handleNumChoices = event => {
@@ -207,44 +195,190 @@ class PitchTrainer extends Component {
       [event.target.name]: event.target.value,
      });
   };
-
-  // TODO
+  // randomly chose a note from the tones user chooses
   getNextNote() {
-    return null;
+    let tonesChosen = [];
+    for(let i = 0; i < this.state.tones.length; ++i){ if(this.state.tones[i]) tonesChosen.push(TONES[i]); }
+    return tonesChosen[Math.floor(Math.random()*tonesChosen.length)];
+  }
+  // return an array of possible answers
+  getShuffledAnswers(tones, notePlaying, numChoices) {
+    let answers = [notePlaying], tonesChosen = [], numAns;
+    for(let i = 0; i < tones.length; ++i){ if(tones[i] && TONES[i]!==notePlaying) tonesChosen.push(TONES[i]); }
+    numAns = Math.min(numChoices-1, tonesChosen.length);
+    tonesChosen = shuffleArray(tonesChosen);
+    while (numAns--) { answers.push(tonesChosen.pop()); }
+    return shuffleArray(answers);
+  }
+  // return an array of objects representing rows of the stat table
+  getStatRows() {
+    let id = 0, rows = [], note;
+    for(let noteIdx = 0; noteIdx < TONES.length; ++noteIdx) {
+      if(this.state.tones[noteIdx] && this.state.statQuestions[noteIdx]) { // only process existing data
+        note = TONES[noteIdx];
+        id += 1;
+        rows.push({
+          id,
+          note,
+          numQ: this.state.statQuestions[noteIdx],
+          numS: this.state.statSkips[noteIdx],
+          numA: this.state.statTries[noteIdx],
+          averageCorrectTime: (this.state.statTriesTime[noteIdx]/this.state.statCorrect[noteIdx]/1000).toFixed(4), // milliseconds
+          accuracy: this.state.statCorrect[noteIdx]/this.state.statQuestions[noteIdx],
+        });
+      }
+    }
+    return rows;
   }
   handlePlayNote() {
-    return null;
+    console.log("Should be playing note");
   }
-  handleSkipNote() {
-    return null;
-  }
+  handleNext() {
+    const notePlayingIdx = TONES.indexOf(this.state.notePlaying);
 
+    let statQuestions = this.state.statQuestions;
+    statQuestions[notePlayingIdx] += 1;
+
+    let statSkips = this.state.statSkips;
+    if(!this.state.isCorrect) statSkips[notePlayingIdx] += 1;
+
+    const nextNote = this.getNextNote();
+    const answers = this.getShuffledAnswers(this.state.tones,nextNote,this.state.numChoices);
+    this.setState({
+      notePlaying: nextNote,
+      answers: answers,
+      gameStartTime: performance.now(),
+      lastAnswer: -1,
+      isCorrect: false,
+      statQuestions: statQuestions,
+      statSkips: statSkips,
+    }, () => this.handlePlayNote());
+  }
+  handleGameAnswer(note) {
+    const timeNow = performance.now(), notePlayingIdx = TONES.indexOf(this.state.notePlaying);
+    if(!this.state.isCorrect) { // do nothing if already answered correctly
+      let statTries = this.state.statTries;
+      statTries[notePlayingIdx] += 1;
+      if(note===this.state.notePlaying) {
+        let statTriesTime = this.state.statTriesTime;
+        statTriesTime[notePlayingIdx] += (timeNow - this.state.gameStartTime); // milliseconds
+        let statCorrect = this.state.statCorrect;
+        statCorrect[notePlayingIdx] += 1;
+        this.setState({
+          isCorrect:true,
+          lastAnswer:1,
+          statTries: statTries,
+          statTriesTime: statTriesTime,
+          statCorrect: statCorrect,
+        });
+      } else {
+        this.setState({
+          statTries: statTries,
+          lastAnswer:0,
+        });
+      }
+    } 
+  }
   render() {
-    // const { classes } = this.props;
     return (
       <div className='pitch-trainer'>
         <h1>Pitch Listening Practice</h1>
-        {
-          !this.state.isStarted ? 
-            <PitchTrainerStart
-              tones = {this.state.tones}
-              numChoices = {this.state.numChoices}
-              NUM_CHOICES_LIST = {this.NUM_CHOICES_LIST}
-              handleNumChoices = {(event) => this.handleNumChoices(event)}
-              handleSelection = {(name) => this.handleSelection(name)}
-              handleGameStart = {() => this.handleGameStart()}
-            /> :
-            <PitchTrainerGame 
-              tones = {this.state.tones}
-              numChoices = {this.state.numChoices}
-              notePlaying = {this.state.notePlaying}
-              handleSelection = {(name) => this.handleSelection(name)}
-              handleGameStop = {() => this.handleGameStop()}
-              handlePlayNote = {() => this.handlePlayNote()}
-              handleSkipNote = {() => this.handleSkipNote()}
-            />
-        }
-    </div>
+        <Grid
+          container
+          spacing={32}
+          direction="column"
+          alignItems="center"
+          // justify="center"
+          style={{ minHeight: '70vh', width:'100%'}}
+        >
+          <Grid item xs={"auto"}>
+            <h2>{!this.state.isStarted ? "Customize the training" : "Listen and select the note played" }</h2>
+          </Grid>
+
+          <Grid item xs={"auto"}>
+            <TonesCheckboxes tones={this.state.tones} handleSelection={(name) => this.handleSelection(name)}/>
+          </Grid>
+
+          {!this.state.isStarted ? ( 
+            <Grid item xs={"auto"}>
+              <form className='pitch-trainer-num-choices-form' autoComplete='off'>
+                <FormLabel component="legend"> Choose the number of candidates for each question </FormLabel>
+                <FormControl className='pitch-trainer-num-choices-form-control'>
+                  <Select
+                    value={this.state.numChoices}
+                    onChange={this.handleNumChoices}
+                    displayEmpty
+                    name='numChoices'
+                    className='pitch-trainer-num-choices-select'
+                  >
+                    {this.NUM_CHOICES_LIST}
+                  </Select>
+                  {/* <FormHelperText>Select the number of candidates for each note practice round</FormHelperText> */}
+                </FormControl>
+              </form>
+            </Grid>
+          ) : (
+            <Grid container spacing={16} direction="row" justify="center">
+              <Grid item xs={1}>
+                <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handlePlayNote()}>
+                  <MusicNoteIcon className="leftIcon pitch-trainer-leftIcon" />
+                  Play
+                </Button>
+              </Grid>
+              <Grid item xs={1}>
+                <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handleNext()}>
+                  {(!this.state.isCorrect) ? 
+                    (<SkipNextIcon className="leftIcon pitch-trainer-leftIcon" />) :
+                    (<NavigateNextIcon className="leftIcon pitch-trainer-leftIcon" />)
+                  }
+                  {(!this.state.isCorrect) ? ("Skip") : ("Next")}
+                </Button>
+              </Grid>
+            </Grid>
+          )}
+
+          {(this.state.isStarted) && 
+            <Grid item xs={"auto"}>
+              <TonesAnswerButtons 
+                answers={this.state.answers}
+                handleGameAnswer = {
+                  (note) => this.handleGameAnswer(note)
+                }
+              />
+            </Grid>
+          }
+
+          {(this.state.isStarted) && 
+            <Grid item>
+              <Typography variant="h5">
+                {(this.state.lastAnswer===-1) ? "Make a choice" : (this.state.lastAnswer===1) ? "Correct!" : "Sorry, try again."}
+              </Typography>
+            </Grid>
+          }
+
+          {(!this.state.isStarted)?(
+            <Grid item xs={"auto"}>
+              <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleGameStart()}>
+              <ArrowRightIcon className="leftIcon pitch-trainer-leftIcon" />
+              Start
+              </Button>
+            </Grid>
+          ) : (
+            <Grid item xs={"auto"}>
+              <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleGameStop()}>
+              <StopIcon className="leftIcon pitch-trainer-leftIcon" />
+              End
+              </Button>
+            </Grid>
+          )}
+          {(!this.state.isStarted) && (!this.state.isFirstGame) && 
+            <Grid item xs={"auto"}>
+              <h5>Latest Statistics</h5>
+              <PitchTrainerStatistics rows={this.getStatRows()}/>
+            </Grid>
+          }
+        </Grid>
+      </div>
     );
   }
 }

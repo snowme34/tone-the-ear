@@ -14,3 +14,8 @@ iconSmall {
   fontSize: 20; 
 }
 */
+
+.pitch-trainer-stat-table {
+  width: 100%;
+  max-width: 80vw;
+}

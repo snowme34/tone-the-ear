@@ -91,7 +91,7 @@ class TopMenu extends React.Component {
               <MenuItem component={Link} to="/contact" onClick={this.handleClose}>Contact</MenuItem>
             </Menu>
 
-            <Typography variant="h6" color="inherit" align="left" justifyContent='center' className={classes.grow}>
+            <Typography variant="h6" color="inherit" align="left" className={classes.grow}>
               Tone the Ear
             </Typography>
 
