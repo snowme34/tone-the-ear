@@ -34,6 +34,7 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+// import CircularProgress from '@material-ui/core/CircularProgress';
 // import Paper from '@material-ui/core/Paper';
 // import pink from '@material-ui/core/colors/pink';
 // import { Sampler } from 'tone';
@@ -147,6 +148,7 @@ class PitchTrainer extends Component {
     this.state = {
       //     ['C',  'C#', 'D', 'D#',  'E',  'F', 'F#', 'G', 'G#',  'A','A#',  'B']
       tones: [true,false,true,false,false,false,false,true,false,true,false,false],
+      isLoaded: false,
       isStarted: false,
       numChoices: 3,
       tonePlaying: 'C',
@@ -170,6 +172,7 @@ class PitchTrainer extends Component {
       soundfont: 'MusyngKite'
     }).then((acoustic_grand_piano) => {
       this.somePiano = acoustic_grand_piano;
+      this.setState({ isLoaded: true });
     });
   }
   handleSelection = name => event => {
@@ -341,21 +344,23 @@ class PitchTrainer extends Component {
               </form>
             </Grid>
           ) : (
-            <Grid container spacing={16} direction="row" justify="center">
-              <Grid item xs={1}>
-                <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handlePlayNote()}>
-                  <MusicNoteIcon className="leftIcon pitch-trainer-leftIcon" />
-                  Play
-                </Button>
-              </Grid>
-              <Grid item xs={1}>
-                <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handleNext()}>
-                  {(!this.state.isCorrect) ? 
-                    (<SkipNextIcon className="leftIcon pitch-trainer-leftIcon" />) :
-                    (<NavigateNextIcon className="leftIcon pitch-trainer-leftIcon" />)
-                  }
-                  {(!this.state.isCorrect) ? ("Skip") : ("Next")}
-                </Button>
+            <Grid item xs={6}>
+              <Grid container spacing={16} direction="row" alignContent="center" >
+                <Grid item xs={6} sm={6}>
+                  <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handlePlayNote()}>
+                    <MusicNoteIcon className="leftIcon pitch-trainer-leftIcon" />
+                    Play
+                  </Button>
+                </Grid>
+                <Grid item xs={6} sm={6}>
+                  <Button fullWidth={true} variant="contained" className="button pitch-trainer-button" onClick={() => this.handleNext()}>
+                    {(!this.state.isCorrect) ? 
+                      (<SkipNextIcon className="leftIcon pitch-trainer-leftIcon" />) :
+                      (<NavigateNextIcon className="leftIcon pitch-trainer-leftIcon" />)
+                    }
+                    {(!this.state.isCorrect) ? ("Skip") : ("Next")}
+                  </Button>
+                </Grid>
               </Grid>
             </Grid>
           )}
@@ -381,9 +386,9 @@ class PitchTrainer extends Component {
 
           {(!this.state.isStarted)?(
             <Grid item xs={"auto"}>
-              <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleGameStart()}>
+              <Button disabled={!this.state.isLoaded} variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleGameStart()}>
               <ArrowRightIcon className="leftIcon pitch-trainer-leftIcon" />
-              Start
+              {this.state.isLoaded?"Start":"Loading"}
               </Button>
             </Grid>
           ) : (
