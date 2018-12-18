@@ -12,9 +12,12 @@ In development.
 
 * A piano that displays the note being played
   * Supports display mutiple notes at the same time
-* More to come
+* A pitch trainer
+  * Plays a random note based on users' choice
+  * Provides useful statistics to help users understand their progress
+* More to come...
 
-## Technologies Used
+## Main Technologies Used
 
 * React
 * Material-ui
