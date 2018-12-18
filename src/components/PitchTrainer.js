@@ -38,8 +38,9 @@ import TableRow from '@material-ui/core/TableRow';
 // import pink from '@material-ui/core/colors/pink';
 // import { Sampler } from 'tone';
 // import {note, chord} from 'teoria';
-import {TONES} from '../constants/NOTES';
-import shuffleArray from '../util/shuffleArray'
+import {instrument as soundfontInstrument} from 'soundfont-player';
+import {OCTAVE_NUMBERS, TONES} from '../constants/NOTES';
+import shuffleArray from '../util/shuffleArray';
 import './PitchTrainer.css';
 
 function TonesCheckboxes(props){
@@ -115,7 +116,7 @@ function PitchTrainerStatistics(props) {
             <TableCell numeric>Number of Skipped Questions</TableCell>
             <TableCell numeric>Number of Attempts</TableCell>
             <TableCell numeric>Average Times for Correct Attempt(s)</TableCell>
-            <TableCell numeric>Accuracy (#Correct/#Questions)</TableCell>
+            <TableCell numeric>Accuracy (#Correct/#Attempts)</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -129,7 +130,7 @@ function PitchTrainerStatistics(props) {
                 <TableCell numeric>{row.numS}</TableCell>
                 <TableCell numeric>{row.numA}</TableCell>
                 <TableCell numeric>{isNaN(row.averageCorrectTime)?(0):(row.averageCorrectTime)}</TableCell>
-                <TableCell numeric>{row.accuracy}</TableCell>
+                <TableCell numeric>{isNaN(row.accuracy)?(0):(row.accuracy)}</TableCell>
               </TableRow>
             );
           })}
@@ -148,7 +149,8 @@ class PitchTrainer extends Component {
       tones: [true,false,true,false,false,false,false,true,false,true,false,false],
       isStarted: false,
       numChoices: 3,
-      notePlaying: 'C',
+      tonePlaying: 'C',
+      notePlaying: 'C4',
       gameStartTime: 0,
       isCorrect: false,
       lastAnswer: -1, // -1: no ans, 0: wrong ans, 1: correct ans
@@ -163,6 +165,12 @@ class PitchTrainer extends Component {
       statCorrect: [0,0,0,0,0,0,0,0,0,0,0,0], // how many correct ans in first selection, used to calc the accuracy
     };
     this.NUM_CHOICES_LIST = Array.apply(null, {length: TONES.length}).map(Number.call, Number).map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>).slice(3);
+    this.ac = new AudioContext();
+    soundfontInstrument(this.ac, 'acoustic_grand_piano', {
+      soundfont: 'MusyngKite'
+    }).then((acoustic_grand_piano) => {
+      this.somePiano = acoustic_grand_piano;
+    });
   }
   handleSelection = name => event => {
     let t = this.state.tones;
@@ -170,24 +178,35 @@ class PitchTrainer extends Component {
     this.setState({ tones: t });
   };
   handleGameStart() {
-    const nextNote = this.getNextNote();
-    const answers = this.getShuffledAnswers(this.state.tones,nextNote,this.state.numChoices);
+    const nextTone = this.getNextTone();
+    const answers = this.getShuffledAnswers(this.state.tones,nextTone,this.state.numChoices);
     this.setState({
       gameStartTime: performance.now(),
       isStarted: true,
-      notePlaying: nextNote,
+      tonePlaying: nextTone,
+      notePlaying: this.getNextNote(nextTone),
       isCorrect: false,
       lastAnswer: -1,
       answers: answers,
     }, () => this.handlePlayNote());
   }
   handleGameStop() {
+    const tonePlayingIdx = TONES.indexOf(this.state.tonePlaying);
+
+    let statQuestions = this.state.statQuestions;
+    statQuestions[tonePlayingIdx] += 1;
+
+    let statSkips = this.state.statSkips;
+    if(!this.state.isCorrect) statSkips[tonePlayingIdx] += 1;
+
     this.setState({
       isStarted: false,
       isCorrect: false,
       isFirstGame: false,
       lastAnswer: -1,
       gameStartTime: 0,
+      statQuestions: statQuestions,
+      statSkips: statSkips,
     });
   }
   handleNumChoices = event => {
@@ -196,15 +215,18 @@ class PitchTrainer extends Component {
      });
   };
   // randomly chose a note from the tones user chooses
-  getNextNote() {
+  getNextTone() {
     let tonesChosen = [];
     for(let i = 0; i < this.state.tones.length; ++i){ if(this.state.tones[i]) tonesChosen.push(TONES[i]); }
     return tonesChosen[Math.floor(Math.random()*tonesChosen.length)];
   }
+  getNextNote(tone) {
+    return tone+OCTAVE_NUMBERS[Math.floor(Math.random()*OCTAVE_NUMBERS.length)].toString();
+  }
   // return an array of possible answers
-  getShuffledAnswers(tones, notePlaying, numChoices) {
-    let answers = [notePlaying], tonesChosen = [], numAns;
-    for(let i = 0; i < tones.length; ++i){ if(tones[i] && TONES[i]!==notePlaying) tonesChosen.push(TONES[i]); }
+  getShuffledAnswers(tones, tonePlaying, numChoices) {
+    let answers = [tonePlaying], tonesChosen = [], numAns;
+    for(let i = 0; i < tones.length; ++i){ if(tones[i] && TONES[i]!==tonePlaying) tonesChosen.push(TONES[i]); }
     numAns = Math.min(numChoices-1, tonesChosen.length);
     tonesChosen = shuffleArray(tonesChosen);
     while (numAns--) { answers.push(tonesChosen.pop()); }
@@ -214,7 +236,7 @@ class PitchTrainer extends Component {
   getStatRows() {
     let id = 0, rows = [], note;
     for(let noteIdx = 0; noteIdx < TONES.length; ++noteIdx) {
-      if(this.state.tones[noteIdx] && this.state.statQuestions[noteIdx]) { // only process existing data
+      if(this.state.statQuestions[noteIdx]) { // only process existing data
         note = TONES[noteIdx];
         id += 1;
         rows.push({
@@ -224,28 +246,29 @@ class PitchTrainer extends Component {
           numS: this.state.statSkips[noteIdx],
           numA: this.state.statTries[noteIdx],
           averageCorrectTime: (this.state.statTriesTime[noteIdx]/this.state.statCorrect[noteIdx]/1000).toFixed(4), // milliseconds
-          accuracy: this.state.statCorrect[noteIdx]/this.state.statQuestions[noteIdx],
+          accuracy: (this.state.statCorrect[noteIdx]/this.state.statTries[noteIdx]).toFixed(4),
         });
       }
     }
     return rows;
   }
   handlePlayNote() {
-    console.log("Should be playing note");
+    this.somePiano.play(this.state.notePlaying);
   }
   handleNext() {
-    const notePlayingIdx = TONES.indexOf(this.state.notePlaying);
+    const tonePlayingIdx = TONES.indexOf(this.state.tonePlaying);
 
     let statQuestions = this.state.statQuestions;
-    statQuestions[notePlayingIdx] += 1;
+    statQuestions[tonePlayingIdx] += 1;
 
     let statSkips = this.state.statSkips;
-    if(!this.state.isCorrect) statSkips[notePlayingIdx] += 1;
+    if(!this.state.isCorrect) statSkips[tonePlayingIdx] += 1;
 
-    const nextNote = this.getNextNote();
-    const answers = this.getShuffledAnswers(this.state.tones,nextNote,this.state.numChoices);
+    const nextTone = this.getNextTone();
+    const answers = this.getShuffledAnswers(this.state.tones,nextTone,this.state.numChoices);
     this.setState({
-      notePlaying: nextNote,
+      tonePlaying: nextTone,
+      notePlaying: this.getNextNote(nextTone),
       answers: answers,
       gameStartTime: performance.now(),
       lastAnswer: -1,
@@ -255,15 +278,15 @@ class PitchTrainer extends Component {
     }, () => this.handlePlayNote());
   }
   handleGameAnswer(note) {
-    const timeNow = performance.now(), notePlayingIdx = TONES.indexOf(this.state.notePlaying);
+    const timeNow = performance.now(), tonePlayingIdx = TONES.indexOf(this.state.tonePlaying);
     if(!this.state.isCorrect) { // do nothing if already answered correctly
       let statTries = this.state.statTries;
-      statTries[notePlayingIdx] += 1;
-      if(note===this.state.notePlaying) {
+      statTries[tonePlayingIdx] += 1;
+      if(note===this.state.tonePlaying) {
         let statTriesTime = this.state.statTriesTime;
-        statTriesTime[notePlayingIdx] += (timeNow - this.state.gameStartTime); // milliseconds
+        statTriesTime[tonePlayingIdx] += (timeNow - this.state.gameStartTime); // milliseconds
         let statCorrect = this.state.statCorrect;
-        statCorrect[notePlayingIdx] += 1;
+        statCorrect[tonePlayingIdx] += 1;
         this.setState({
           isCorrect:true,
           lastAnswer:1,
@@ -351,7 +374,7 @@ class PitchTrainer extends Component {
           {(this.state.isStarted) && 
             <Grid item>
               <Typography variant="h5">
-                {(this.state.lastAnswer===-1) ? "Make a choice" : (this.state.lastAnswer===1) ? "Correct!" : "Sorry, try again."}
+                {(this.state.lastAnswer===-1) ? "Make a choice" : (this.state.lastAnswer===1) ? "Correct! The note is: "+this.state.notePlaying : "Sorry, try again."}
               </Typography>
             </Grid>
           }
@@ -373,7 +396,7 @@ class PitchTrainer extends Component {
           )}
           {(!this.state.isStarted) && (!this.state.isFirstGame) && 
             <Grid item xs={"auto"}>
-              <h5>Latest Statistics</h5>
+              <h5>Statistics</h5>
               <PitchTrainerStatistics rows={this.getStatRows()}/>
             </Grid>
           }

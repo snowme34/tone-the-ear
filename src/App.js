@@ -39,6 +39,7 @@ class App extends Component {
                 <Route exact path="/" component={Home} />
                 <Route exact path="/Tone" component={TonePlayer} />
                 <Route exact path="/Pitch" component={PitchTrainer} />
+                {/* <Route exact path="/Midi" component={MidiTrainer} /> */}
               </div>
             </div>
           </div>
