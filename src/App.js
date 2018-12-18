@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 // import { BrowserRouter as Router, Route, NavLink, Prompt } from "react-router-dom";
-import { TransitionGroup, CSSTransition } from "react-transition-group";
+// import { TransitionGroup, CSSTransition } from "react-transition-group";
 import {
   BrowserRouter as Router,
-  Switch,
+  // Switch,
   Route,
-  NavLink,
-  Redirect
+  // NavLink,
+  // Redirect
 } from "react-router-dom";
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import pink from '@material-ui/core/colors/pink';
@@ -21,6 +21,9 @@ const theme = createMuiTheme({
     palette: {
       primary: blue,
       secondary: pink,
+    },
+    typography: {
+      useNextVariants: true,
     },
   });
 
