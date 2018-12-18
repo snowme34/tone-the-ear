@@ -214,7 +214,7 @@ class PitchTrainer extends Component {
   getStatRows() {
     let id = 0, rows = [], note;
     for(let noteIdx = 0; noteIdx < TONES.length; ++noteIdx) {
-      if(this.state.tones[noteIdx] && this.state.statQuestions[noteIdx]) { // only process existing data
+      if(this.state.statQuestions[noteIdx]) { // only process existing data
         note = TONES[noteIdx];
         id += 1;
         rows.push({
