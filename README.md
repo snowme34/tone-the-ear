@@ -31,3 +31,8 @@ instrument that requires almost zero knowledge
 about music theory.
 
 Create an issue if there is something wrong.
+
+## Credits
+
+The midi files are from [Classical Piano Midi Page](http://www.piano-midi.de/copy.htm) and
+are distributed under [cc-by-sa Germany License](https://creativecommons.org/licenses/by-sa/3.0/de/deed.en).

@@ -120,6 +120,14 @@ class TopMenu extends React.Component {
                 >
                 Pitch
                 </Button>
+                <Button
+                  aria-owns={open ? 'menu-appbar' : undefined}
+                  aria-haspopup="true"
+                  color="inherit"
+                  component={Link} to="/midi"
+                >
+                Midi
+                </Button>
               </div>
 
             {/* {auth && (

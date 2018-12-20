@@ -1,22 +1,60 @@
 import React, { Component } from 'react';
-// import { BrowserRouter as Router, Route, NavLink, Prompt } from "react-router-dom";
 // import { TransitionGroup, CSSTransition } from "react-transition-group";
-import {
-  BrowserRouter as Router,
-  // Switch,
-  Route,
-  // NavLink,
-  // Redirect
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, } from "react-router-dom";
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import pink from '@material-ui/core/colors/pink';
 import blue from '@material-ui/core/colors/blue';
+import { Provider } from 'react-redux'
+import { createStore, combineReducers, compose } from 'redux'
+import { reactReduxFirebase, firebaseReducer } from 'react-redux-firebase'
+import firebase from 'firebase'
 import logo from './logo.svg';
 import './App.css';
 import TopMenu from './components/TopMenu'
 import TonePlayer from './components/TonePlayer'
 import PitchTrainer from './components/PitchTrainer'
+import MidiTrainer from './components/MidiTrainer'
 
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBR6Vv9bEqeg6Srr2m0CO-QU7fq_gqFj_8",
+  authDomain: "fir-tone-the-ear.firebaseapp.com",
+  databaseURL: "https://fir-tone-the-ear.firebaseio.com",
+  projectId: "fir-tone-the-ear",
+  storageBucket: "fir-tone-the-ear.appspot.com",
+  messagingSenderId: "852693584093"
+};
+
+// react-redux-firebase config
+const rrfConfig = {
+  userProfile: 'users',
+  // useFirestoreForProfile: true // Firestore for Profile instead of Realtime DB
+}
+
+// Initialize firebase instance
+firebase.initializeApp(firebaseConfig)
+
+// Initialize other services on firebase instance
+// firebase.firestore() // <- needed if using firestore
+// firebase.functions() // <- needed if using httpsCallable
+
+// Add reactReduxFirebase enhancer when making store creator
+const createStoreWithFirebase = compose(
+  reactReduxFirebase(firebase, rrfConfig), // firebase instance as first argument
+  // reduxFirestore(firebase) // <- needed if using firestore
+)(createStore)
+ 
+// Add firebase to reducers
+const rootReducer = combineReducers({
+  firebase: firebaseReducer,
+  // firestore: firestoreReducer // <- needed if using firestore
+})
+ 
+// Create store with reducers and initial state
+const initialState = {}
+const store = createStoreWithFirebase(rootReducer, initialState)
+
+// theme for material ui
 const theme = createMuiTheme({
     palette: {
       primary: blue,
@@ -30,22 +68,24 @@ const theme = createMuiTheme({
 class App extends Component {
   render() {
     return (
-      <MuiThemeProvider theme={theme}>
-        <Router>
-          <div className="App">
-            <div id="dashboard">
-              <TopMenu />
-              <div className="content">
-                <Route exact path="/" component={Home} />
-                <Route exact path="/Tone" component={TonePlayer} />
-                <Route exact path="/Pitch" component={PitchTrainer} />
-                {/* <Route exact path="/Midi" component={MidiTrainer} /> */}
+      <Provider store={store}>
+        <MuiThemeProvider theme={theme}>
+          <Router>
+            <div className="App">
+              <div id="dashboard">
+                <TopMenu />
+                <div className="content">
+                  <Route exact path="/" component={Home} />
+                  <Route exact path="/Tone" component={TonePlayer} />
+                  <Route exact path="/Pitch" component={PitchTrainer} />
+                  <Route exact path="/Midi" component={MidiTrainer} />
+                </div>
               </div>
             </div>
-          </div>
-          {/* TODO: Add footer */}
-        </Router>
-      </MuiThemeProvider>
+            {/* TODO: Add footer */}
+          </Router>
+        </MuiThemeProvider>
+      </Provider>
     );
   }
 }
