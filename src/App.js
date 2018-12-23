@@ -56,14 +56,14 @@ const store = createStoreWithFirebase(rootReducer, initialState)
 
 // theme for material ui
 const theme = createMuiTheme({
-    palette: {
-      primary: blue,
-      secondary: pink,
-    },
-    typography: {
-      useNextVariants: true,
-    },
-  });
+  palette: {
+    primary: blue,
+    secondary: pink,
+  },
+  typography: {
+    useNextVariants: true,
+  },
+});
 
 class App extends Component {
   render() {

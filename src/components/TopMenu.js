@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 const styles = {
   root: {
     flexGrow: 1,
+    height: '10vh',
   },
   grow: {
     flexGrow: 1,
