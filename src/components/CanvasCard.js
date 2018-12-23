@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { compose } from 'recompose'
 import { withStyles } from '@material-ui/core/styles';
 import classnames from 'classnames';
 import Card from '@material-ui/core/Card';
@@ -18,7 +19,18 @@ import MoreVertIcon from '@material-ui/icons/MoreVert';
 
 const styles = theme => ({
   card: {
-    maxWidth: 400,
+    [theme.breakpoints.down('sm')]: {
+      maxWidth: '100%',
+    },
+    [theme.breakpoints.up('md')]: {
+      maxWidth: '80%',
+    },
+    [theme.breakpoints.up('lg')]: {
+      maxWidth: '56.25%',
+    },
+  },
+  cardCanvas: {
+    'overflow-x': 'auto',
   },
   media: {
     height: 0,
@@ -33,34 +45,45 @@ const styles = theme => ({
       duration: theme.transitions.duration.shortest,
     }),
     marginLeft: 'auto',
-    [theme.breakpoints.up('sm')]: {
-      marginRight: -8,
-    },
   },
   expandOpen: {
     transform: 'rotate(180deg)',
   },
 });
 
-class CanvasCard extends React.Component {
-  state = { expanded: false };
+class InnerCanvasCard extends React.Component {
+  state = { expanded: true };
 
   handleExpandClick = () => {
     this.setState(state => ({ expanded: !state.expanded }));
   };
 
   render() {
-    console.log(this.props.canvasRef);
     const { classes } = this.props;
+    console.log(typeof this.props.canvasRef);
+    console.log(this.props.canvasRef);
+    console.log("Test: canvasID: " + this.props.canvasID);
 
     return (
       <Card className={classes.card}>
         <CardHeader
-          title="Visualization of Notes"
-          subheader="From mm"
+          title={this.props.title}
+          subheader={this.props.subheader}
+          action={
+            <IconButton
+                className={classnames(classes.expand, {
+                  [classes.expandOpen]: this.state.expanded,
+                })}
+                onClick={this.handleExpandClick}
+                aria-expanded={this.state.expanded}
+                aria-label="Show"
+              >
+                <ExpandMoreIcon />
+            </IconButton>
+          }
         />
-        <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-          <CardContent> <canvas id={this.props.canvasID} ref={this.props.canvasRef}> </canvas></CardContent>
+        <Collapse in={this.state.expanded} timeout="auto">
+          <CardContent className={classes.cardCanvas}> <canvas id={this.props.canvasID} ref={this.props.canvasRef}> </canvas></CardContent>
           <CardActions className={classes.actions} disableActionSpacing>
             <IconButton aria-label="Add to favorites">
               <FavoriteIcon />
@@ -68,21 +91,11 @@ class CanvasCard extends React.Component {
             <IconButton aria-label="Share">
               <ShareIcon />
             </IconButton>
-            <IconButton
-              className={classnames(classes.expand, {
-                [classes.expandOpen]: this.state.expanded,
-              })}
-              onClick={this.handleExpandClick}
-              aria-expanded={this.state.expanded}
-              aria-label="Show more"
-            >
-              <ExpandMoreIcon />
-            </IconButton>
+            
           </CardActions>
           <CardContent>
             <Typography paragraph>
-              Heat 1/2 cup of the broth in a pot until simmering, add saffron and set aside for 10
-              minutes.
+              Using the visualizer from <a href="">Magenta.js</a>
             </Typography>
           </CardContent>
         </Collapse>
@@ -91,16 +104,18 @@ class CanvasCard extends React.Component {
   }
 }
 
-CanvasCard.propTypes = {
+InnerCanvasCard.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-// const CanvasCardWithRef = React.forwardRef((props, ref) => (
-//   // ...props works?
-//   <CanvasCard canvasRef={ref} {...props}>
-//     {props.children}
-//   </CanvasCard>
-// ));
+const CanvasCard = (Component) => React.forwardRef((props, ref) => {
+    // return <InnerCanvasCard {...props} canvasRef={ref} />;
+    return <Component {...props} canvasRef={ref} />;
+});
 
-export default withStyles(styles)(CanvasCard);
-// export default React.forwardRef((props, ref) => withStyles(styles)(<CanvasCard canvasRef={ref} {...props}>{props.children}</CanvasCard>));
+export default compose(
+  CanvasCard,
+  withStyles(styles),
+)(InnerCanvasCard);
+
+// export default withStyles(styles)(CanvasCard);

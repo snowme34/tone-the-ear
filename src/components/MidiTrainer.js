@@ -28,6 +28,7 @@ import StopIcon from '@material-ui/icons/Stop';
 import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import SkipNextIcon from '@material-ui/icons/SkipNext';
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import RefreshIcon from '@material-ui/icons/Refresh';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -266,12 +267,11 @@ class MidiTrainer extends Component {
     this.fileInputRef.current.files = null; // reset
   }
   async handleStart() {
-    this.setState({isLoading: true});
     if(!this.state.userDecision) { // unlikely to happen
       return alert("Please choose an input to proceed");
     }
+    this.setState({isLoading: true});
     if(this.state.userDecision===1) { // fetch midi from storage
-
       try {
         let midiFileUrl = await this.props.firebase.storage().ref('midi-samples/'+this.state.fileMidiExample).getDownloadURL();
         var xhr = new XMLHttpRequest();
@@ -287,22 +287,18 @@ class MidiTrainer extends Component {
         xhr.open('GET', midiFileUrl);
         xhr.send();
       } catch(error) {
-        // TODO: more graceful error handling
-        console.log(error);
+        console.log(error); // TODO: more graceful error handling
       };
-
     } else if(this.state.userDecision===2) { // uploaded midi
-
       this.midi = this.fileInput;
       this.fileReader.onload = async () => {
         this.ns = mm.midiToSequenceProto(this.fileReader.result); // string
         this.setUpContent();
       }
       this.fileReader.readAsBinaryString(this.fileInput);
-
     } else if(this.state.userDecision===3) { // uploaded non-midi
       this.setState({ isTranscribing: true, });
-      let ns = await this.getNSFromTranscribeAudioFile(); // will set this.ns
+      let ns = await this.getNSFromTranscribeAudioFile();
       this.ns = ns; this.midi = new Blob([mm.sequenceProtoToMidi(ns)]);
       this.setState({ isTranscribing: false, });
       this.setUpContent();
@@ -310,6 +306,24 @@ class MidiTrainer extends Component {
     // set started and clear fileInput in setUpContent()
   }
   handleAnew() { // give user an option to start over
+    this.setState({
+      userDecision: 0, 
+      // isAnonymousUserSignedIn: false,
+      isPlayerLoaded: false,
+      isExampleListOpen: false,
+      isUploading: false,
+      isLoading: false,
+      isTranscribing: false,
+      isStarted: false,
+      isModelLoaded: false,
+      isPlaying: false,
+      fileMidiExample: '',
+    });
+    this.initPlayer(); // load and init player at beginning
+    this.visualizer = null;
+    this.fileInput = null;
+    this.ns = null;
+    this.midi = null;
   }
   async getNSFromTranscribeAudioFile() {
     // initialize model
@@ -335,7 +349,7 @@ class MidiTrainer extends Component {
   async setUpContent() {
     this.setState({isStarted: true});
     await this.player.loadSamples(this.ns);
-    console.log(this.ns);
+    console.log(this.mmCanvasRef.current);
     this.visualizer = new mm.Visualizer(this.ns, this.mmCanvasRef.current, {
       noteRGB: '0, 0, 0', 
       activeNoteRGB: '232, 69, 164', 
@@ -441,8 +455,7 @@ class MidiTrainer extends Component {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              {/* <CanvasCard canvasId="mm-canvas" canvasRef={this.mmCanvasRef} /> */}
-              <canvas ref={this.mmCanvasRef}> </canvas>
+              <CanvasCard title="Visualization of Notes" subheader="" canvasId="mm-canvas" ref={this.mmCanvasRef} />
             </React.Fragment>
           )}
 
@@ -452,12 +465,12 @@ class MidiTrainer extends Component {
 
             <Grid item xs={"auto"}>
               {(!this.state.isTranscribing)?(
-                <Button disabled={!(this.state.userDecision && this.state.isPlayerLoaded) || (this.state.isLoading)} variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleStart()}>
-                  <ArrowRightIcon className="leftIcon pitch-trainer-leftIcon" />
+                <Button disabled={!(this.state.userDecision && this.state.isPlayerLoaded) || (this.state.isLoading)} variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handleStart()}>
+                  <ArrowRightIcon className="leftIcon midi-trainer-leftIcon" />
                   {!(this.state.userDecision && this.state.isPlayerLoaded) ? (!this.state.isPlayerLoaded ? "Loading" : "Waiting") : ( (this.state.isLoading) ? "Loading" : "Start")}
                 </Button>
               ):(
-                <Button disabled variant="contained" color="secondary" className="button pitch-trainer-button">
+                <Button disabled variant="contained" color="secondary" className="button midi-trainer-button">
                   {/* TODO: test progress */}
                   <CircularProgress className={classes.progress} />
                   Transcribing
@@ -481,12 +494,10 @@ class MidiTrainer extends Component {
             </React.Fragment>
           ) : (
             <Grid item xs={"auto"}>
-
-              <Button variant="contained" color="secondary" className="button pitch-trainer-button" onClick={() => this.handleAnew()}>
-              <StopIcon className="leftIcon pitch-trainer-leftIcon" />
+              <Button variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handleAnew()}>
+              <RefreshIcon className="leftIcon midi-trainer-leftIcon" />
               Restart
               </Button>
-
             </Grid>
           )}
 
@@ -508,5 +519,4 @@ const enhance = compose(
   firebaseConnect()
 );
 
-// export default connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(App)); // recompose?
 export default enhance(MidiTrainer);
