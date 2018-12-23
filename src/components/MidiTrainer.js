@@ -104,7 +104,7 @@ function ExampleMidiDialog(props) {
         <DialogTitle id="example-midi-list-dialog-title">Choose a song</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            You can choose an example MIDI file from the <b>huge</b> list below:
+            You can choose an example MIDI file from the <b>huge</b> list below: <br/>
           </DialogContentText>
 
           <form className={classes.form} noValidate>
@@ -121,9 +121,14 @@ function ExampleMidiDialog(props) {
                 {ExampleMidiDialogMenu}
               </Select>
             </FormControl>
-            
           </form>
+
+          <DialogContentText style={{ align:'center'}}>
+            <br/>(Files from <a href="http://www.piano-midi.de/midi_files.htm">www.piano-midi.de</a> by Bernd Krueger. All the information extracted from those files and playbacks are licensed under the <a href="https://creativecommons.org/licenses/by-sa/3.0/de/deed.en">cc-by-sa Germany License</a>)
+          </DialogContentText>
+
         </DialogContent>
+
         <DialogActions>
           <Button onClick={props.handleExampleListClose} color="primary">
             Close
@@ -139,8 +144,6 @@ ExampleMidiDialog.propTypes = {
   classes: PropTypes.object.isRequired,
   handleExampleListClose: PropTypes.func.isRequired,
 };
-
-
 
 class MidiTrainer extends Component {
   constructor(props) {
@@ -269,98 +272,86 @@ class MidiTrainer extends Component {
     }
     if(this.state.userDecision===1) { // fetch midi from storage
 
-      let midiFileRef = this.props.firebase.storage().ref('midi-samples/'+this.state.fileMidiExample);
-      midiFileRef.getDownloadURL().then(async url => {
+      try {
+        let midiFileUrl = await this.props.firebase.storage().ref('midi-samples/'+this.state.fileMidiExample).getDownloadURL();
         var xhr = new XMLHttpRequest();
         xhr.responseType = 'blob';
         xhr.onload = async event => {
           this.midi = xhr.response;
           this.fileReader.onload = async () => {
-            this.ns = mm.midiToSequenceProto(this.fileReader.result); // string
-            await this.setUpContent();
+            this.ns = await mm.midiToSequenceProto(this.fileReader.result); // string
+            this.setUpContent();
           }
           this.fileReader.readAsBinaryString(xhr.response);
         };
-        xhr.open('GET', url);
+        xhr.open('GET', midiFileUrl);
         xhr.send();
-      }).catch(error => {
+      } catch(error) {
         // TODO: more graceful error handling
         console.log(error);
-      });
+      };
 
     } else if(this.state.userDecision===2) { // uploaded midi
 
       this.midi = this.fileInput;
       this.fileReader.onload = async () => {
         this.ns = mm.midiToSequenceProto(this.fileReader.result); // string
-        await this.setUpContent();
+        this.setUpContent();
       }
       this.fileReader.readAsBinaryString(this.fileInput);
 
     } else if(this.state.userDecision===3) { // uploaded non-midi
-
-      await this.transcribeAudioFile(); // will set this.ns
-      await this.setUpContent();
-
+      this.setState({ isTranscribing: true, });
+      let ns = await this.getNSFromTranscribeAudioFile(); // will set this.ns
+      this.ns = ns; this.midi = new Blob([mm.sequenceProtoToMidi(ns)]);
+      this.setState({ isTranscribing: false, });
+      this.setUpContent();
     }
     // set started and clear fileInput in setUpContent()
   }
   handleAnew() { // give user an option to start over
   }
-  async transcribeAudioFile() {
-    this.setState({
-      isTranscribing: true,
-    });
+  async getNSFromTranscribeAudioFile() {
     // initialize model
     this.model = new mm.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni');
-    this.model.initialize().then(() => {
-      // resetUIState(); // ?
-      this.setState({
-        isModelLoaded: true,
-      });
+    await this.model.initialize();
+    this.setState({ isModelLoaded: true, });
 
-      // ?
-      //// slow on Safari.
-      // if (window.webkitOfflineAudioContext) {
-      //   safariWarning.hidden = false;
-      // }
-      
-      // // broken on ios12.
-      // if (navigator.userAgent.indexOf('iPhone OS 12_0') >= 0) {
-      //   iosError.hidden = false;
-      //   buttons.hidden = true;
-      // }
+    // ?
+    //// slow on Safari.
+    // if (window.webkitOfflineAudioContext) {
+    //   safariWarning.hidden = false;
+    // }
+    
+    // // broken on ios12.
+    // if (navigator.userAgent.indexOf('iPhone OS 12_0') >= 0) {
+    //   iosError.hidden = false;
+    //   buttons.hidden = true;
+    // }
 
-      // start transcribing
-      this.model.transcribeFromAudioFile(this.fileInputRef.current.files[0]).then((ns) => {
-        this.ns = ns;
-        this.midi = new Blob([mm.sequenceProtoToMidi(ns)]);
-        this.setState({
-          isTranscribing: false,
-        });
-      });
-    });
+    // start transcribing
+    return this.model.transcribeFromAudioFile(this.fileInputRef.current.files[0]);
   }
   async setUpContent() {
     this.setState({isStarted: true});
-    this.player.loadSamples(this.ns).then(() => {
-      this.visualizer = new mm.Visualizer(this.ns, this.mmCanvasRef.current, {
-        noteRGB: '255, 255, 255', 
-        activeNoteRGB: '232, 69, 164', 
-        pixelsPerTimeStep: window.innerWidth < 500 ? null: 80,
-      });
+    await this.player.loadSamples(this.ns);
+    console.log(this.ns);
+    this.visualizer = new mm.Visualizer(this.ns, this.mmCanvasRef.current, {
+      noteRGB: '0, 0, 0', 
+      activeNoteRGB: '232, 69, 164', 
+      pixelsPerTimeStep: window.innerWidth < 500 ? null: 80,
+    });
 
-      // ???
-      // resetUIState();
-      // showVisualizer();
+    // ???
+    // resetUIState();
+    // showVisualizer();
 
-      // reset
-      this.fileInput = null;
-      this.state.fileMidiExample = '';
+    // reset
+    this.fileInput = null;
+    this.state.fileMidiExample = '';
 
-      this.setState({
-        isLoading: false,
-      });
+    this.setState({
+      isLoading: false,
     });
   }
   render() {
