@@ -9,7 +9,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
-// import Grid from '@material-ui/core/Grid';
+import Grid from '@material-ui/core/Grid';
 // import { Sampler } from 'tone';
 // import {note, chord} from 'teoria'
 import Piano from 'react-piano-component';
@@ -221,12 +221,20 @@ class TonePlayer extends Component {
   render() {
     // const { classes } = this.props;
     return (
-      <div className='tone-player'>
-        <Paper className='tone-player-paper' elevation={1}>
-          <Paper className='note-display-paper' elevation={1}>
+      <Grid
+          container
+          spacing={8}
+          direction="column"
+          alignItems="center"
+          // justify="center"
+          wrap="nowrap"
+          style={{margin: 'auto', height: '90vh', width:'100%'}}
+        >
+          <Grid item>
             <h1>A Musical Keyboard</h1>
             <h2>Use it to practice your ears!</h2>
-
+          </Grid>
+          <Grid item>
             <form className='tone-player-form' autoComplete='off'>
               <FormControl className='tone-player-range-form-control'>
                 <Select
@@ -241,12 +249,14 @@ class TonePlayer extends Component {
                 <FormHelperText>Select the first note and the last note</FormHelperText>
               </FormControl>
             </form>
+          </Grid>
 
-            <div className='note-display'>
+          <Grid item xs={"auto"} sm={"auto"}>
               {this.renderNote(this.state.theNote)}
-            </div>
-          </Paper>
-          <Paper className='piano-container-paper' elevation={1}>
+          </Grid>
+
+          <Grid item>
+          <Paper elevation={1}>
             <PianoContainer>
               <ThePiano 
                 handleNotePlay={(note) => this.handleNotePlay(note)}
@@ -256,8 +266,9 @@ class TonePlayer extends Component {
               />
             </PianoContainer>
           </Paper>
-       </Paper>
-      </div>
+          </Grid>
+
+      </Grid>
     );
   }
 }

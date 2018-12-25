@@ -300,17 +300,16 @@ class PitchTrainer extends Component {
   }
   render() {
     return (
-      <div className='pitch-trainer'>
-        <h1>Pitch Listening Practice</h1>
         <Grid
           container
           spacing={32}
           direction="column"
           alignItems="center"
           // justify="center"
-          style={{ minHeight: '70vh', width:'100%'}}
+          style={{ minHeight: '90vh', width:'100%', margin: 'auto'}}
         >
           <Grid item xs={"auto"}>
+            <h1>Pitch Listening Practice</h1>
             <h2>{!this.state.isStarted ? "Customize the training" : "Listen and select the note played" }</h2>
           </Grid>
 
@@ -399,7 +398,6 @@ class PitchTrainer extends Component {
             </Grid>
           }
         </Grid>
-      </div>
     );
   }
 }

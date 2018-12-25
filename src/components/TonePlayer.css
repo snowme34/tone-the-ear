@@ -1,9 +1,6 @@
 .tone-player-grid {
   position: relative;
 }
-.tone-player-paper {
-  background-color: #444;
-}
 /* https://github.com/lillydinhle/react-piano-component/blob/master/src/demo/components/InteractivePiano.css */
 .the-piano__piano-container {
   display: inline-flex;
