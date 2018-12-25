@@ -88,7 +88,7 @@ class TopMenu extends React.Component {
               open={open}
               onClose={this.handleClose}
             >
-              <MenuItem component={Link} to="/about" onClick={this.handleClose}>About</MenuItem>
+              <MenuItem onClick={this.handleClose}><a href="https://github.com/snowme34/tone-the-ear" target="_blank" style={{'text-decoration':'none'}}>About</a></MenuItem>
               <MenuItem component={Link} to="/contact" onClick={this.handleClose}>Contact</MenuItem>
             </Menu>
 
