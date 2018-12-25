@@ -9,6 +9,7 @@
     "firebase": "^5.7.0",
     "midi-player-js": "^2.0.5",
     "midi-writer-js": "^1.5.2",
+    "midiconvert": "^0.4.7",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
     "react-piano-component": "^0.1.4",
@@ -16,9 +17,12 @@
     "react-redux-firebase": "^2.2.5",
     "react-router-dom": "^4.3.1",
     "react-scripts": "2.1.1",
+    "react-virtualized": "^9.21.0",
     "redux": "^4.0.1",
     "soundfont-player": "^0.11.0",
-    "teoria": "^2.5.0"
+    "teoria": "^2.5.0",
+    "typescript": "^3.2.2",
+    "wavesurfer.js": "^2.1.1"
   },
   "scripts": {
     "start": "react-scripts start",
