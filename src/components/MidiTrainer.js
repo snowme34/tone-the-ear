@@ -355,6 +355,7 @@ class MidiTrainer extends Component {
     this.midi = null;
     this.midiJSON = null;
     this.noteTableRows = null;
+    this.handlePlayerStop();
   }
   handlePlayerStart() {
     // user can 'restart' at any time
