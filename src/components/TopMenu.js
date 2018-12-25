@@ -89,7 +89,7 @@ class TopMenu extends React.Component {
               onClose={this.handleClose}
             >
               <MenuItem onClick={this.handleClose}><a href="https://github.com/snowme34/tone-the-ear" target="_blank" style={{'text-decoration':'none'}}>About</a></MenuItem>
-              <MenuItem component={Link} to="/contact" onClick={this.handleClose}>Contact</MenuItem>
+              <MenuItem onClick={this.handleClose}><a href="https://contact.snowme34.com/" target="_blank" style={{'text-decoration':'none'}}>Contact</a></MenuItem>
             </Menu>
 
             <Typography variant="h6" color="inherit" align="left" className={classes.grow}>
