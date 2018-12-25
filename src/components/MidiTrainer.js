@@ -1,60 +1,34 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-// import { withFirebase } from 'react-redux-firebase'
-// import { connect } from 'react-redux'
-import { compose } from 'redux'
-// import { firebaseConnect, isLoaded, isEmpty } from 'react-redux-firebase'
+import { compose } from 'recompose'
 import { firebaseConnect } from 'react-redux-firebase'
 import * as mm from '@magenta/music'; // can we minimize this import?
+import * as tf from '@tensorflow/tfjs'; // necessary?
+import WaveSurfer from 'wavesurfer.js';
+import { parse as MidiConvertParse } from 'midiconvert';
 import { withStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
-import Input from '@material-ui/core/Input';
-import OutlinedInput from '@material-ui/core/OutlinedInput';
-import FilledInput from '@material-ui/core/FilledInput';
+import Switch from '@material-ui/core/Switch';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
-import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
-import FormGroup from '@material-ui/core/FormGroup';
-import FormLabel from '@material-ui/core/FormLabel';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
 import Button from '@material-ui/core/Button';
+import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import ArrowRightIcon from '@material-ui/icons/ArrowRight';
 import StopIcon from '@material-ui/icons/Stop';
-import MusicNoteIcon from '@material-ui/icons/MusicNote';
-import SkipNextIcon from '@material-ui/icons/SkipNext';
-import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import PauseIcon from '@material-ui/icons/Pause';
 import RefreshIcon from '@material-ui/icons/Refresh';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import Switch from '@material-ui/core/Switch';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItem from '@material-ui/core/ListItem';
-import List from '@material-ui/core/List';
-import Divider from '@material-ui/core/Divider';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import CloseIcon from '@material-ui/icons/Close';
-import Slide from '@material-ui/core/Slide';
-import pink from '@material-ui/core/colors/pink';
-// import { Sampler } from 'tone';
-// import {note, chord} from 'teoria';
 import CanvasCard from '../components/CanvasCard'
-import {OCTAVE_NUMBERS, TONES} from '../constants/NOTES';
+import ReactVirtualizedTable from '../components/ReactVirtualizedTable'
 import MIDI_EXAMPLES from '../constants/MIDI_EXAMPLES';
 import './MidiTrainer.css';
 
@@ -86,6 +60,17 @@ const styles = theme => ({
   },
   formControlLabel: {
     marginTop: theme.spacing.unit,
+  },
+  CanvasCardGrid: {
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+    [theme.breakpoints.up('md')]: {
+      width: '80%',
+    },
+    [theme.breakpoints.up('lg')]: {
+      width: '80%',
+    },
   },
 });
 
@@ -146,6 +131,8 @@ ExampleMidiDialog.propTypes = {
   handleExampleListClose: PropTypes.func.isRequired,
 };
 
+// const PROPER_UPLOAD_SIZE = 
+
 class MidiTrainer extends Component {
   constructor(props) {
     super(props);
@@ -165,13 +152,18 @@ class MidiTrainer extends Component {
       isStarted: false,// has user started
       isModelLoaded: false, // is the magenta model loaded
       isPlaying: false, // is the player playing
+      isPaused: false, // is the player paused
+
+      tfBackend: 'webgl',
 
       fileMidiExample: '', // example file name
     };
     this.initPlayer(); // load and init player at beginning
     this.visualizer = null;
+    this.wavesurfer = null;
     this.mmCanvasRef = React.createRef();
-    this.waveCanvasRef = React.createRef();
+    this.spCanvasRef = React.createRef();
+    this.nsCanvasRef = React.createRef();
 
     // upload file
     this.fileInputRef = React.createRef();
@@ -180,12 +172,43 @@ class MidiTrainer extends Component {
     // don't touch until start
     this.ns = null;
     this.midi = null;
+    this.midiJSON = null;
+    this.noteTableRows = null;
 
     // only use if user uploaded a non-midi audio
     this.model = null;
 
     // file reader for blob manipulation
     this.fileReader = new FileReader(); 
+
+    this.noteTableCols = [
+      {
+        width: 200,
+        label: 'Note Name',
+        dataKey: 'name',
+      },
+      {
+        width: 200,
+        flexGrow: 1.0,
+        label: 'Start Time',
+        dataKey: 'time',
+        numeric: true,
+      },
+      {
+        width: 200,
+        flexGrow: 1.0,
+        label: 'Duration',
+        dataKey: 'duration',
+        numeric: true,
+      },
+      {
+        width: 200,
+        flexGrow: 1.0,
+        label: 'Velocity',
+        dataKey: 'velocity',
+        numeric: true,
+      },
+    ];
   }
   // anonymous sign in for later
   // componentDidMount() {
@@ -205,28 +228,21 @@ class MidiTrainer extends Component {
   //     this.setState({isAnonymousUserSignedIn:false});
   //   }
   // }
-  // loadPlayer() {
-  //   return new Promise(resolve => {
-  //     // let p = new mm.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/salamander';
-  //     resolve(new mm.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/salamander'));
-  //   });
-  // }
   async initPlayer() {
     this.player = await (() => new Promise(resolve=>{resolve(new mm.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/salamander'));}))();
-    // let player = await this.loadPlayer();
-    // TODO: fix some bug after magenta 1.1.15 but I don't know what that is
+    // TODO: fix some bug after magenta 1.1.15 but I don't know what that is https://glitch.com/edit/#!/piano-scribe?path=app.js:154:40
     this.player.callbackObject = {
-      // run: (note) => {
-      //   const currentNotePosition = this.visualizer.redraw(note);
+      run: (note) => {
+        const currentNotePosition = this.visualizer.redraw(note);
       //   // See if we need to scroll the container.
       //   const containerWidth = container.getBoundingClientRect().width;
       //   if (currentNotePosition > (container.scrollLeft + containerWidth)) {
       //     container.scrollLeft = currentNotePosition - 20;
       //   }
-      // },
-      stop: () => {this.state.setState({isPlaying:false});}
+      },
+      // stop: () => {this.state.setState({isPlaying:false});}
     };
-    return this.setState({
+    this.setState({
       isPlayerLoaded: true,
     });
   }
@@ -240,6 +256,10 @@ class MidiTrainer extends Component {
     this.setState({ [event.target.name]: event.target.value, userDecision: 1, });
     this.fileInput = null; // if selection made here, remove uploaded ones
   };
+  handleChangeTfBackend() {
+    const tfBackend = (this.state.tfBackend==='cpu')?'webgl':'cpu';
+    this.setState({ tfBackend, });
+  }
   handleUpload() {
     this.fileInput = null; // reset
     if(!this.fileInputRef.current.files || !this.fileInputRef.current.files[0]) {
@@ -252,7 +272,7 @@ class MidiTrainer extends Component {
       return alert("Error, file uploaded is not legal audio file. Please check the file's MIME type")
     }
     // // check file size
-    // if(this.fileInput.size > MAX_UPLOAD_SIZE) {
+    // if(this.fileInput.size > PROPER_UPLOAD_SIZE) {
     // }
     if(this.fileInput.type === ('audio/mid')) { // midi file
       this.midi = this.fileInput; // blob
@@ -280,6 +300,7 @@ class MidiTrainer extends Component {
           this.midi = xhr.response;
           this.fileReader.onload = async () => {
             this.ns = await mm.midiToSequenceProto(this.fileReader.result); // string
+            this.midiJSON = await MidiConvertParse(this.fileReader.result);
             this.setUpContent();
           }
           this.fileReader.readAsBinaryString(xhr.response);
@@ -293,23 +314,29 @@ class MidiTrainer extends Component {
       this.midi = this.fileInput;
       this.fileReader.onload = async () => {
         this.ns = mm.midiToSequenceProto(this.fileReader.result); // string
+        this.midiJSON = await MidiConvertParse(this.fileReader.result);
         this.setUpContent();
       }
       this.fileReader.readAsBinaryString(this.fileInput);
     } else if(this.state.userDecision===3) { // uploaded non-midi
       this.setState({ isTranscribing: true, });
-      let ns = await this.getNSFromTranscribeAudioFile();
-      this.ns = ns; this.midi = new Blob([mm.sequenceProtoToMidi(ns)]);
-      this.setState({ isTranscribing: false, });
-      this.setUpContent();
+      const ns = await this.getNSFromTranscribeAudioFile();
+      const midiInArray = mm.sequenceProtoToMidi(ns); //uint8array
+      this.ns = ns; this.midi = new Blob([midiInArray]);
+      this.fileReader.onload = async () => {
+        this.midiJSON = await MidiConvertParse(this.fileReader.result);
+        this.setState({ isTranscribing: false, });
+        this.setUpContent();
+      }
+      this.fileReader.readAsBinaryString(this.midi);
     }
     // set started and clear fileInput in setUpContent()
   }
   handleAnew() { // give user an option to start over
+    if(this.state.isModelLoaded) this.model.dispose();
     this.setState({
       userDecision: 0, 
       // isAnonymousUserSignedIn: false,
-      isPlayerLoaded: false,
       isExampleListOpen: false,
       isUploading: false,
       isLoading: false,
@@ -317,18 +344,51 @@ class MidiTrainer extends Component {
       isStarted: false,
       isModelLoaded: false,
       isPlaying: false,
+      isPaused: false,
+      tfBackend: 'webgl',
       fileMidiExample: '',
     });
-    this.initPlayer(); // load and init player at beginning
     this.visualizer = null;
+    this.wavesurfer = null;
     this.fileInput = null;
     this.ns = null;
     this.midi = null;
+    this.midiJSON = null;
+    this.noteTableRows = null;
+  }
+  handlePlayerStart() {
+    // user can 'restart' at any time
+    this.setState({isPlaying:true, isPaused:false,});
+    this.player.start(this.ns);
+    if(this.wavesurfer) { this.wavesurfer.play(); }
+  }
+  handlePlayerResumePause() {
+    if(!this.state.isPlaying && this.state.isPaused) { 
+      this.setState({isPlaying:true, isPaused:false,});
+      this.player.resume();
+      if(this.wavesurfer) { this.wavesurfer.playPause(); }
+    } else if(this.state.isPlaying && !this.state.isPaused) {
+      this.setState({isPlaying:false, isPaused:true,});
+      this.player.pause();
+      if(this.wavesurfer) { this.wavesurfer.playPause(); }
+    }
+  }
+  handlePlayerStop() {
+    if(this.state.isPlaying) {
+      this.setState({isPlaying:false, isPaused:false,});
+      this.player.stop();
+      if(this.wavesurfer) { this.wavesurfer.stop(); }
+    }
   }
   async getNSFromTranscribeAudioFile() {
-    // initialize model
-    this.model = new mm.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni');
-    await this.model.initialize();
+    if(this.state.tfBackend!==tf.getBackend()) tf.setBackend(this.state.tfBackend);
+    // don't reinitialize model
+    if(this.state.isModelLoaded) {
+      this.model.dispose();
+    } else {
+      this.model = new mm.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni');
+      await this.model.initialize();
+    }
     this.setState({ isModelLoaded: true, });
 
     // ?
@@ -346,27 +406,47 @@ class MidiTrainer extends Component {
     // start transcribing
     return this.model.transcribeFromAudioFile(this.fileInputRef.current.files[0]);
   }
+  async getNoteTableRows() {
+    let id = 0, rows = [], note;
+    const numTracks = this.midiJSON["tracks"].length;
+    for(let trackIdx = 0; trackIdx < numTracks; ++trackIdx) {
+      const numNotes = this.midiJSON["tracks"][trackIdx].length;
+      for(let noteIdx = 0; noteIdx < numNotes; ++noteIdx) {
+        note = this.midiJSON["tracks"][trackIdx]["notes"][noteIdx];
+        id += 1;
+        rows.push({
+          id,
+          name: note["name"],
+          time: note["time"],
+          duration: note["duration"],
+          velocity: note["velocity"],
+        });
+      }
+    }
+    return rows;
+  }
   async setUpContent() {
+    this.noteTableRows = await this.getNoteTableRows();
     this.setState({isStarted: true});
     await this.player.loadSamples(this.ns);
-    console.log(this.mmCanvasRef.current);
     this.visualizer = new mm.Visualizer(this.ns, this.mmCanvasRef.current, {
-      noteRGB: '0, 0, 0', 
-      activeNoteRGB: '232, 69, 164', 
+      noteRGB: '66, 165, 245', 
+      activeNoteRGB: '236, 64, 122', 
+      // activeNoteRGB: '232, 69, 164', 
       pixelsPerTimeStep: window.innerWidth < 500 ? null: 80,
     });
 
-    // ???
-    // resetUIState();
-    // showVisualizer();
+    // TODO: figure out a way to output midi waveform
+    if(this.state.userDecision===3) {
+      this.wavesurfer = WaveSurfer.create({
+        container: '#sp-container',
+        waveColor: '#64B5F6',
+        progressColor: '#BA68C8'
+      });
+      this.wavesurfer.loadBlob(this.fileInput);
+    }
 
-    // reset
-    this.fileInput = null;
-    this.state.fileMidiExample = '';
-
-    this.setState({
-      isLoading: false,
-    });
+    this.setState({ isLoading: false, });
   }
   render() {
     const { classes } = this.props;
@@ -379,20 +459,21 @@ class MidiTrainer extends Component {
           spacing={32}
           direction="column"
           alignItems="center"
-          alignContent="center"
           // justify="center"
-          style={{ minHeight: '70vh', width:'100%'}}
+          style={{margin: 'auto', minHeight: '70vh', width:'100%'}}
         >
 
           {/* Instruction */}
           <Grid item>
-            <Typography variant="body1" align="center" className="midi-trainer-body">
-              {
-                !this.state.isStarted ? 
-                "Upload an audio file or choose an existing midi file to begin" : 
-                "Start or stop the audio play"
-              }
-            </Typography>
+            {!this.state.isStarted ? (
+              <Typography variant="body1" align="center" className="midi-trainer-body">
+                  Upload an audio file or choose an existing midi file to begin
+              </Typography>
+            ) : (
+              <Typography variant="body1" align="center" className="midi-trainer-body">
+                The file using is: <br/> "{ (this.state.userDecision === 1) ? this.state.fileMidiExample : this.fileInput.name}"
+              </Typography>
+            )}
           </Grid>
 
           {/* Main Content */}
@@ -439,7 +520,9 @@ class MidiTrainer extends Component {
             { /* Additional Instruction for New Users */ }
             <Grid item xs={6} sm={6} lg={6}>
               <Typography>
-                You can upload a midi file or other audio file. <br/> If you upload a non-midi audio file, this app will use a NN to transcribe the music for you.
+                You can upload a midi file or other audio file. <br/> <br/>
+                If you upload a non-midi audio file, this app will use a NN to transcribe the music for you. <br/> <br/>
+                Currently the maximum duration supported is around 220 seconds. Will improve in the future.
               </Typography>
             </Grid>
 
@@ -455,7 +538,73 @@ class MidiTrainer extends Component {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              <CanvasCard title="Visualization of Notes" subheader="" canvasId="mm-canvas" ref={this.mmCanvasRef} />
+
+            <Grid item xs={10} sm={10} lg={10}>
+              <Grid container spacing={16} direction="row" align="center" justify="center" style={{margin: 'auto', width:'100%'}}>
+
+                <Grid item xs={4} sm={4}>
+                  <Button fullWidth={true} disabled={!this.state.isPlaying} variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handlePlayerStop()}>
+                  <StopIcon className="leftIcon midi-trainer-leftIcon" />
+                  Stop
+                  </Button>
+                </Grid>
+
+                <Grid item xs={4} sm={4}>
+                  <Button fullWidth={true} variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handlePlayerStart()}>
+                  <PlayArrowIcon className="leftIcon midi-trainer-leftIcon" />
+                  Play
+                  </Button>
+                </Grid>
+
+                <Grid item xs={4} sm={4}>
+                  <Button fullWidth={true} disabled={!this.state.isPlaying && !this.state.isPaused} variant="contained" className="button midi-trainer-button" onClick={() => this.handlePlayerResumePause()}>
+                    {(this.state.isPaused) ? 
+                      (<PlayArrowIcon className="leftIcon midi-trainer-leftIcon" />) :
+                      (<PauseIcon className="leftIcon midi-trainer-leftIcon" />)
+                    }
+                    {(this.state.isPaused) ? ("Resume") : ("Pause")}
+                  </Button>
+                </Grid>
+
+              </Grid>
+            </Grid>
+
+            <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
+                <CanvasCard 
+                  className={classes.CanvasCard}
+                  title="Visualization of Notes"
+                  subheader=""
+                  canvasID="mm-canvas"
+                  ref={this.mmCanvasRef}
+                  footText='Using the visualizer from Magenta.js'
+                  // onMount={() => {console.log("Mounted!");if(this.visualizer) this.visualizer.redraw();}}
+                  // onCanvasClick={() => {console.log("Clicked!"); this.visualizer.redraw();}}
+                 />
+            </Grid>
+            {/* TODO: prompt user that spectrum will be available if uploaded non-midi audio */}
+            { (this.state.userDecision===3) &&
+              <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
+                  <CanvasCard
+                    className={classes.CanvasCard}
+                    title="Spectrum of Audio"
+                    subheader=""
+                    noCanvas={true}
+                  >
+                    <div id="sp-container"> </div>
+                  </CanvasCard>
+              </Grid>
+            }
+            <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
+                  <CanvasCard
+                    className={classes.CanvasCard}
+                    title="Table of Notes"
+                    subheader=""
+                    noCanvas={true}
+                  >
+                  <ReactVirtualizedTable rows={this.noteTableRows} cols={this.noteTableCols}/>
+                  </CanvasCard>
+            </Grid>
+
             </React.Fragment>
           )}
 
@@ -478,12 +627,38 @@ class MidiTrainer extends Component {
               )}
             </Grid>
 
+            {/* Additional reactions to User's decision if uploaded midi audio file */}
+            { (this.state.userDecision===2) &&
+                <Grid item xs={6} sm={6} lg={6}>
+                  <Typography variant="body1" align="center" className="midi-trainer-body">
+                    A midi file is detected. This app uses a piano soundfont to play the music. <br/>
+                    It does not make sense to covert everything to piano. <br/>
+                    So, the non-piano part of your midi file might not be properly played later. <br/>
+                    But the analysis will work as usual.
+                  </Typography>
+                </Grid>
+            }
+
             {/* Additional reactions to User's decision if uploaded non-midi audio file */}
             { (this.state.userDecision===3) &&
                 <Grid item xs={6} sm={6} lg={6}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        disabled={this.state.isModelLoaded || this.state.isTranscribing || this.state.isStarted}
+                        checked={this.state.tfBackend==='cpu'}
+                        onChange={()=>this.handleChangeTfBackend()}
+                        value="tfBackend"
+                      />
+                    }
+                    label="Use CPU as Tensorflow backend"
+                  />
                   <Typography variant="body1" align="center" className="midi-trainer-body">
-                    A non-midi audio file is detected. This app uses a piano transcription neural network model. <br/>
-                    The accuracy may decrease if the file contains different instruments or is very complicated. <br/> <br/>
+                    A non-midi audio file is detected. This app uses a piano transcription neural network model.
+                    Use the switch above to toggle tensorflow backend of the neural network model.
+                    Use CPU if the file is very large (longer than 2.5 min for mp3 file).
+                    But CPU backend will be around 10 times slower. (It takes CPU backend around 700s to transcribe a 3 min mp3 file) <a href="https://github.com/snowme34/tone-the-ear/issues/21">Why</a>?<br/>
+                    The accuracy may decrease if the file contains different instruments or is very complicated.  <br/> <br/>
                   </Typography>
                   <Typography variant="subtitle2" align="center" className="midi-trainer-body">
                     All happens locally in your browser using <a href="https://g.co/magenta">Magenta.js</a> and <a href="https://js.tensorflow.org/">TensorFlow.js</a>.
@@ -514,9 +689,7 @@ MidiTrainer.propTypes = {
   })
 };
 
-const enhance = compose(
+export default compose(
   withStyles(styles),
   firebaseConnect()
-);
-
-export default enhance(MidiTrainer);
+)(MidiTrainer);

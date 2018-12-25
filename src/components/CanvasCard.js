@@ -5,29 +5,32 @@ import { withStyles } from '@material-ui/core/styles';
 import classnames from 'classnames';
 import Card from '@material-ui/core/Card';
 import CardHeader from '@material-ui/core/CardHeader';
-import CardMedia from '@material-ui/core/CardMedia';
+// import CardMedia from '@material-ui/core/CardMedia';
 import CardContent from '@material-ui/core/CardContent';
-import CardActions from '@material-ui/core/CardActions';
+// import CardActions from '@material-ui/core/CardActions';
 import Collapse from '@material-ui/core/Collapse';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
-import red from '@material-ui/core/colors/red';
-import FavoriteIcon from '@material-ui/icons/Favorite';
-import ShareIcon from '@material-ui/icons/Share';
+// import red from '@material-ui/core/colors/red';
+// import FavoriteIcon from '@material-ui/icons/Favorite';
+// import ShareIcon from '@material-ui/icons/Share';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
+// import MoreVertIcon from '@material-ui/icons/MoreVert';
 
 const styles = theme => ({
   card: {
     [theme.breakpoints.down('sm')]: {
-      maxWidth: '100%',
+      width: '100%',
     },
     [theme.breakpoints.up('md')]: {
+      width: '80%',
       maxWidth: '80%',
     },
     [theme.breakpoints.up('lg')]: {
-      maxWidth: '56.25%',
+      width: '80%',
+      maxWidth: '80%',
     },
+    margin: 'auto',
   },
   cardCanvas: {
     'overflow-x': 'auto',
@@ -58,11 +61,19 @@ class InnerCanvasCard extends React.Component {
     this.setState(state => ({ expanded: !state.expanded }));
   };
 
+  handleCanvasClick() {
+    if(this.props.onCanvasClick) {
+      this.props.onCanvasClick();
+      // this.forceUpdate();
+    }
+  }
+
+  componentDidMount() {
+    if(this.props.onMount) this.props.onMount();
+  }
+
   render() {
     const { classes } = this.props;
-    console.log(typeof this.props.canvasRef);
-    console.log(this.props.canvasRef);
-    console.log("Test: canvasID: " + this.props.canvasID);
 
     return (
       <Card className={classes.card}>
@@ -83,20 +94,31 @@ class InnerCanvasCard extends React.Component {
           }
         />
         <Collapse in={this.state.expanded} timeout="auto">
-          <CardContent className={classes.cardCanvas}> <canvas id={this.props.canvasID} ref={this.props.canvasRef}> </canvas></CardContent>
-          <CardActions className={classes.actions} disableActionSpacing>
+          {(this.props.noCanvas) ? (
+            <CardContent className={classes.cardCanvas}> 
+              {this.props.children}
+            </CardContent>
+          ) : (
+            <CardContent className={classes.cardCanvas}> 
+              <canvas id={this.props.canvasID} ref={this.props.canvasRef} onClick={() => this.handleCanvasClick()}> </canvas>
+            </CardContent>
+          )}
+
+          {/* <CardActions className={classes.actions} disableActionSpacing>
             <IconButton aria-label="Add to favorites">
               <FavoriteIcon />
             </IconButton>
             <IconButton aria-label="Share">
               <ShareIcon />
             </IconButton>
-            
-          </CardActions>
+          </CardActions> */}
+
           <CardContent>
+
             <Typography paragraph>
-              Using the visualizer from <a href="">Magenta.js</a>
+              {this.props.footText}
             </Typography>
+
           </CardContent>
         </Collapse>
       </Card>
@@ -109,7 +131,6 @@ InnerCanvasCard.propTypes = {
 };
 
 const CanvasCard = (Component) => React.forwardRef((props, ref) => {
-    // return <InnerCanvasCard {...props} canvasRef={ref} />;
     return <Component {...props} canvasRef={ref} />;
 });
 
@@ -117,5 +138,3 @@ export default compose(
   CanvasCard,
   withStyles(styles),
 )(InnerCanvasCard);
-
-// export default withStyles(styles)(CanvasCard);
