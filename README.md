@@ -15,6 +15,11 @@ In development.
 * A pitch trainer
   * Plays a random note based on users' choice
   * Provides useful statistics to help users understand their progress
+* A Transcription Practice Page
+  * Uses the [Onsets and Frames: Dual-Objective Piano Transcription Model](https://magenta.tensorflow.org/onsets-frames) to transcribe user uploaded non-midi audio file
+  * Uses libraries from [@magenta/music](https://tensorflow.github.io/magenta-js/music/modules/_core_player_.html) to process user uploaded midi file and example midi files stored on Firebase
+  * Visualizes the note sequence, audio spectrum (user uploaded audio file only), and midi in JSON format
+  * Supports playback
 * More to come...
 
 ## Main Technologies Used
