@@ -39,7 +39,7 @@ import './PitchTrainer.css';
 
 function TonesCheckboxes(props){
   return(
-    <div className="tones-check-boxes-container">
+    <React.Fragment>
       <FormLabel component="legend">
         Choose the notes to test, you can change anytime
       </FormLabel>
@@ -58,7 +58,7 @@ function TonesCheckboxes(props){
           />
         )}
       </FormGroup>
-    </div>
+    </React.Fragment>
   );
 }
 
