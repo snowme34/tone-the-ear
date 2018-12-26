@@ -4,6 +4,7 @@ import { compose } from 'recompose'
 import { firebaseConnect } from 'react-redux-firebase'
 import * as mm from '@magenta/music'; // can we minimize this import?
 import * as tf from '@tensorflow/tfjs'; // necessary?
+import * as Tone from 'tone'; // necessary?
 import WaveSurfer from 'wavesurfer.js';
 import { parse as MidiConvertParse } from 'midiconvert';
 import { withStyles } from '@material-ui/core/styles';
@@ -13,6 +14,8 @@ import Switch from '@material-ui/core/Switch';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
+import Checkbox from '@material-ui/core/Checkbox';
+import FormGroup from '@material-ui/core/FormGroup';
 import FormControl from '@material-ui/core/FormControl';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
@@ -179,11 +182,15 @@ class MidiTrainer extends Component {
       isPlaying: false, // is the player playing
       isPaused: false, // is the player paused
 
+      isPlayerMuted: false,
+      isOriginalMuted: false,
+
       tfBackend: 'webgl',
 
       fileMidiExample: '', // example file name
       fileAudioExample: '', // example file name
     };
+    // this.player = null;
     this.initPlayer(); // load and init player at beginning
     this.visualizer = null;
     this.wavesurfer = null;
@@ -255,11 +262,13 @@ class MidiTrainer extends Component {
   //   }
   // }
   async initPlayer() {
+    // TODO: add synth player
     this.player = await (() => new Promise(resolve=>{resolve(new mm.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/salamander'));}))();
     // TODO: fix some bug after magenta 1.1.15 but I don't know what that is https://glitch.com/edit/#!/piano-scribe?path=app.js:154:40
     this.player.callbackObject = {
       run: (note) => {
-        const currentNotePosition = this.visualizer.redraw(note);
+        this.visualizer.redraw(note);
+      // const currentNotePosition = this.visualizer.redraw(note);
       //   // See if we need to scroll the container.
       //   const containerWidth = container.getBoundingClientRect().width;
       //   if (currentNotePosition > (container.scrollLeft + containerWidth)) {
@@ -292,6 +301,18 @@ class MidiTrainer extends Component {
     const tfBackend = (this.state.tfBackend==='cpu')?'webgl':'cpu';
     this.setState({ tfBackend, });
   }
+  handleMuteToggle = name => event => {
+    if(name==='isPlayerMuted') {
+      const isMute = this.state.isPlayerMuted;
+      // TODO: assumes that Master is user. May lead to bug
+      Tone.Master.mute = !isMute; 
+      this.setState({isPlayerMuted:!isMute});
+    } else {
+      const isMute = this.state.isOriginalMuted;
+      this.wavesurfer.setMute(!isMute); 
+      this.setState({isOriginalMuted:!isMute});
+    }
+  };
   handleUpload() {
     this.fileInput = null; // reset
     if(!this.fileInputRef.current.files || !this.fileInputRef.current.files[0]) {
@@ -402,6 +423,8 @@ class MidiTrainer extends Component {
       isModelLoaded: false,
       isPlaying: false,
       isPaused: false,
+      isPlayerMuted: false,
+      isOriginalMuted: false,
       tfBackend: 'webgl',
       fileMidiExample: '',
       fileAudioExample: '',
@@ -432,7 +455,7 @@ class MidiTrainer extends Component {
     }
   }
   handlePlayerStop() {
-    if(this.state.isPlaying) {
+    if(this.state.isPlaying || (!this.state.isPlaying&&this.state.isPaused)) {
       this.setState({isPlaying:false, isPaused:false,});
       this.player.stop();
       if(this.wavesurfer) { this.wavesurfer.stop(); }
@@ -504,7 +527,6 @@ class MidiTrainer extends Component {
       this.wavesurfer.loadBlob(this.fileInput);
       // disable mouse interaction to sync with mm visualization
       this.wavesurfer.toggleInteraction(); 
-      this.wavesurfer.setMute(true); 
     }
 
     this.setState({ isLoading: false, });
@@ -528,7 +550,7 @@ class MidiTrainer extends Component {
           <Grid item>
             {!this.state.isStarted ? (
               <Typography variant="body1" align="center" className="midi-trainer-body">
-                  Upload an audio file or choose an existing midi file to begin
+                  Upload an audio file or choose an example to begin
               </Typography>
             ) : (
               <Typography variant="body1" align="center" className="midi-trainer-body">
@@ -585,7 +607,7 @@ class MidiTrainer extends Component {
                 You can upload a midi file or other audio file. <br/> <br/>
                 If you upload a non-midi audio file, this app will use a NN to transcribe the music for you. <br/> <br/>
                 Currently the maximum duration supported stably is around 220 seconds. Will improve in the future. <br/> <br/>
-                Note: if you want to fully refresh this page, try to close all tabs and reopen.
+                Note: This is a PWA. If you want to fully refresh this page, try to close all tabs and reopen.
               </Typography>
             </Grid>
 
@@ -606,14 +628,14 @@ class MidiTrainer extends Component {
               <Grid container spacing={16} direction="row" align="center" justify="center" style={{margin: 'auto', width:'100%'}}>
 
                 <Grid item xs={4} sm={4}>
-                  <Button fullWidth={true} disabled={!this.state.isPlaying} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStop()}>
+                  <Button fullWidth={true} disabled={!this.state.isPlaying&&!this.state.isPaused} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStop()}>
                   <StopIcon className="leftIcon midi-trainer-leftIcon" />
                   Stop
                   </Button>
                 </Grid>
 
                 <Grid item xs={4} sm={4}>
-                  <Button fullWidth={true} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStart()}>
+                  <Button disabled={this.state.isPlaying || (!this.state.isPlaying&&this.state.isPaused)} fullWidth={true} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStart()}>
                   <PlayArrowIcon className="leftIcon midi-trainer-leftIcon" />
                   Play
                   </Button>
@@ -632,40 +654,70 @@ class MidiTrainer extends Component {
               </Grid>
             </Grid>
 
-            <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
-                <CanvasCard 
-                  className={classes.CanvasCard}
-                  title="Visualization of Notes"
-                  subheader=""
-                  canvasID="mm-canvas"
-                  ref={this.mmCanvasRef}
-                  footText='Using the visualizer from Magenta.js'
-                  // onMount={() => {console.log("Mounted!");if(this.visualizer) this.visualizer.redraw();}}
-                  // onCanvasClick={() => {console.log("Clicked!"); this.visualizer.redraw();}}
-                 />
+            <Grid item xs={10} sm={10} lg={10}>
+              <FormGroup row>
+                <FormControlLabel
+                  key='isPlayerMuted'
+                  control={
+                    <Checkbox
+                      checked={this.state.isPlayerMuted}
+                      onChange={this.handleMuteToggle('isPlayerMuted')}
+                      value='isPlayerMuted'
+                    />
+                  }
+                  label={(this.state.userDecision===3 || this.state.userDecision===4) ? 'Mute Transcription' : 'Mute'}
+                />
+                {(this.state.userDecision===3 || this.state.userDecision===4) &&
+                  <FormControlLabel
+                    key='isOriginalMuted'
+                    control={
+                      <Checkbox
+                        checked={this.state.isOriginalMuted}
+                        onChange={this.handleMuteToggle('isOriginalMuted')}
+                        value='isOriginalMuted'
+                      />
+                    }
+                    label='Mute Original'
+                  />
+                }
+              </FormGroup>
             </Grid>
+
+
             {/* TODO: prompt user that spectrum will be available if uploaded non-midi audio */}
             { (this.state.userDecision===3 || this.state.userDecision===4) &&
               <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
-                  <CanvasCard
-                    className={classes.CanvasCard}
-                    title="Spectrum of Audio"
-                    subheader=""
-                    noCanvas={true}
-                  >
-                    <div id="sp-container"> </div>
-                  </CanvasCard>
+                <CanvasCard
+                  className={classes.CanvasCard}
+                  title="Spectrum of Original Audio"
+                  subheader=""
+                  noCanvas={true}
+                >
+                  <div id="sp-container"> </div>
+                </CanvasCard>
               </Grid>
             }
             <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
-                  <CanvasCard
-                    className={classes.CanvasCard}
-                    title="Table of Notes"
-                    subheader=""
-                    noCanvas={true}
-                  >
-                  <ReactVirtualizedTable rows={this.noteTableRows} cols={this.noteTableCols}/>
-                  </CanvasCard>
+              <CanvasCard 
+                className={classes.CanvasCard}
+                title="Visualization of Notes"
+                subheader={(this.state.userDecision===3 || this.state.userDecision===4) ? "Transcription by Magenta.js" : ""}
+                canvasID="mm-canvas"
+                ref={this.mmCanvasRef}
+                footText='Using the visualizer from Magenta.js'
+                // onMount={() => {console.log("Mounted!");if(this.visualizer) this.visualizer.redraw();}}
+                // onCanvasClick={() => {console.log("Clicked!"); this.visualizer.redraw();}}
+              />
+            </Grid>
+            <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
+              <CanvasCard
+                className={classes.CanvasCard}
+                title="Table of Notes"
+                subheader={(this.state.userDecision===3 || this.state.userDecision===4) ? "Transcription by Magenta.js" : ""}
+                noCanvas={true}
+              >
+              <ReactVirtualizedTable rows={this.noteTableRows} cols={this.noteTableCols}/>
+              </CanvasCard>
             </Grid>
 
             </React.Fragment>
@@ -719,7 +771,7 @@ class MidiTrainer extends Component {
                     A non-midi audio file is detected.
                     Transcription is done by a neural network model and will slow down the device.
                     Use short recordings of piano to get better experience. <br/>
-                    Use CPU if file longer than about 2 min or if this page crashes with default one. <br/>
+                    Use CPU if file longer than about 2 min or if this page crashes with default setting. <br/>
                     (But there is no guarantee that everything works properly for files longer than 3 min) <br/> <br/>
                   </Typography>
                   <Typography variant="body2" align="center" className="midi-trainer-body">
