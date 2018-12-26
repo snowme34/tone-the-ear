@@ -30,6 +30,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import CanvasCard from '../components/CanvasCard'
 import ReactVirtualizedTable from '../components/ReactVirtualizedTable'
 import MIDI_EXAMPLES from '../constants/MIDI_EXAMPLES';
+import AUDIO_EXAMPLES from '../constants/AUDIO_EXAMPLES';
 import './MidiTrainer.css';
 
 const styles = theme => ({
@@ -75,22 +76,25 @@ const styles = theme => ({
 });
 
 const ExampleMidiDialogMenu = (Object.keys(MIDI_EXAMPLES)).map(r=><MenuItem key={r} value={r}>{MIDI_EXAMPLES[r]}</MenuItem>);
+const ExampleAudioDialogMenu = (Object.keys(AUDIO_EXAMPLES)).map(r=><MenuItem key={r} value={r}>{AUDIO_EXAMPLES[r]}</MenuItem>);
 
-// Dialog for user to choose an existing midi file
+// Dialog for user to choose an existing example file
 // TODO: use virtualized component to improve efficiency
-function ExampleMidiDialog(props) {
+function ExampleListDialog(props) {
   const { classes } = props;
   return(
     <React.Fragment>
       <Dialog
-        open={props.isExampleListOpen}
-        onClose={props.handleExampleListClose}
-        aria-labelledby="example-midi-list-dialog-title"
+        open={props.isExampleListDialogOpen}
+        onClose={props.handleExampleListDialogClose}
+        aria-labelledby="example-list-dialog-title"
       >
-        <DialogTitle id="example-midi-list-dialog-title">Choose a song</DialogTitle>
+        <DialogTitle id="example-list-dialog-title">Choose a song</DialogTitle>
+
         <DialogContent>
+
           <DialogContentText>
-            You can choose an example MIDI file from the <b>huge</b> list below: <br/>
+            You can choose an example file from the <b>huge</b> lists below: <br/>
           </DialogContentText>
 
           <form className={classes.form} noValidate>
@@ -108,15 +112,31 @@ function ExampleMidiDialog(props) {
               </Select>
             </FormControl>
           </form>
+          <form className={classes.form} noValidate>
+            <FormControl className={classes.formControl}>
+              <InputLabel htmlFor="fileAudioExample">Audio File</InputLabel>
+              <Select
+                value={props.fileAudioExample}
+                onChange={props.handleExampleFileSelection}
+                inputProps={{
+                  name: 'fileAudioExample',
+                  id: 'fileAudioExample',
+                }}
+              >
+                {ExampleAudioDialogMenu}
+              </Select>
+            </FormControl>
+          </form>
 
           <DialogContentText style={{ align:'center'}}>
-            <br/>(Files from <a href="http://www.piano-midi.de/midi_files.htm">www.piano-midi.de</a> by Bernd Krueger. All the information extracted from those files and playbacks are licensed under the <a href="https://creativecommons.org/licenses/by-sa/3.0/de/deed.en">cc-by-sa Germany License</a>)
+            <br/>(Midi files from <a href="http://www.piano-midi.de/midi_files.htm">www.piano-midi.de</a> by Bernd Krueger. All the information extracted from those files and playbacks are licensed under the <a href="https://creativecommons.org/licenses/by-sa/3.0/de/deed.en">cc-by-sa Germany License</a>.
+            The sources of audio files can be found <a href="https://github.com/snowme34/tone-the-ear/blob/master/audio-attributions.md">here</a>)
           </DialogContentText>
 
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={props.handleExampleListClose} color="primary">
+          <Button onClick={props.handleExampleListDialogClose} color="primary">
             Close
           </Button>
         </DialogActions>
@@ -126,9 +146,13 @@ function ExampleMidiDialog(props) {
   );
 }
 
-ExampleMidiDialog.propTypes = {
+ExampleListDialog.propTypes = {
   classes: PropTypes.object.isRequired,
-  handleExampleListClose: PropTypes.func.isRequired,
+  isExampleListDialogOpen: PropTypes.bool.isRequired,
+  fileMidiExample: PropTypes.string.isRequired,
+  fileAudioExample: PropTypes.string.isRequired,
+  handleExampleListDialogClose: PropTypes.func.isRequired,
+  handleExampleFileSelection: PropTypes.func.isRequired,
 };
 
 // const PROPER_UPLOAD_SIZE = 
@@ -141,11 +165,12 @@ class MidiTrainer extends Component {
       // 1: existing example midi file -> fetch from db -> midi -> ns
       // 2: uploaded midi file -> midi -> ns
       // 3: uploaded non-midi file -> NN -> ns -> midi
-      userDecision: 0, 
+      // 4: existing example non-midi file -> fetch from db -> NN -> ns -> midi
+      userDecision: 0, // TODO: may use a enum ?
 
       // isAnonymousUserSignedIn: false,
       isPlayerLoaded: false, // is the magenta player loaded
-      isExampleListOpen: false, // is user hesitating over which example midi to use
+      isExampleListDialogOpen: false, // is user hesitating over which example file to use
       isUploading: false, // is the file uploading // TODO: remove if unnecessary
       isLoading: false,
       isTranscribing: false, // is the NN model working on transcribing
@@ -157,6 +182,7 @@ class MidiTrainer extends Component {
       tfBackend: 'webgl',
 
       fileMidiExample: '', // example file name
+      fileAudioExample: '', // example file name
     };
     this.initPlayer(); // load and init player at beginning
     this.visualizer = null;
@@ -240,20 +266,26 @@ class MidiTrainer extends Component {
       //     container.scrollLeft = currentNotePosition - 20;
       //   }
       },
-      // stop: () => {this.state.setState({isPlaying:false});}
+      stop: () => {this.setState({isPlaying:false});}
     };
     this.setState({
       isPlayerLoaded: true,
     });
   }
-  handleExampleListOpen = () => {
-    this.setState({ isExampleListOpen: true });
+  handleExampleListDialogOpen = () => {
+    this.setState({ isExampleListDialogOpen: true });
   };
-  handleExampleListClose = () => {
-    this.setState({ isExampleListOpen: false });
+  handleExampleListDialogClose = () => {
+    this.setState({ isExampleListDialogOpen: false });
   };
-  handleSelection = event => {
-    this.setState({ [event.target.name]: event.target.value, userDecision: 1, });
+  handleExampleFileSelection = event => {
+    const userDecision = (event.target.name==="fileAudioExample" ? 4 : 1);
+    const nonTargetName = (event.target.name==="fileAudioExample" ? 'fileMidiExample' : 'fileAudioExample');
+    this.setState({ 
+      [event.target.name]: event.target.value,
+      [nonTargetName]: '',
+      userDecision,
+    });
     this.fileInput = null; // if selection made here, remove uploaded ones
   };
   handleChangeTfBackend() {
@@ -294,7 +326,7 @@ class MidiTrainer extends Component {
     if(this.state.userDecision===1) { // fetch midi from storage
       try {
         let midiFileUrl = await this.props.firebase.storage().ref('midi-samples/'+this.state.fileMidiExample).getDownloadURL();
-        var xhr = new XMLHttpRequest();
+        let xhr = new XMLHttpRequest();
         xhr.responseType = 'blob';
         xhr.onload = async event => {
           this.midi = xhr.response;
@@ -329,15 +361,40 @@ class MidiTrainer extends Component {
         this.setUpContent();
       }
       this.fileReader.readAsBinaryString(this.midi);
+    } else if(this.state.userDecision===4) { // fetch audio from storage
+      this.setState({ isTranscribing: true, });
+      try {
+        let audioFileUrl = await this.props.firebase.storage().ref('audio-samples/'+this.state.fileAudioExample).getDownloadURL();
+        let xhr = new XMLHttpRequest();
+        xhr.responseType = 'blob';
+        xhr.onload = async event => {
+          this.fileInput = xhr.response;
+          const ns = await this.getNSFromTranscribeAudioFile();
+          const midiInArray = mm.sequenceProtoToMidi(ns); //uint8array
+          this.ns = ns; this.midi = new Blob([midiInArray]);
+          this.fileReader.onload = async () => {
+            this.midiJSON = await MidiConvertParse(this.fileReader.result);
+            this.setState({ isTranscribing: false, });
+            this.setUpContent();
+          }
+          this.fileReader.readAsBinaryString(this.midi);
+        };
+        xhr.open('GET', audioFileUrl);
+        xhr.send();
+      } catch(error) {
+        console.log(error); // TODO: more graceful error handling
+      };
     }
     // set started and clear fileInput in setUpContent()
   }
   handleAnew() { // give user an option to start over
     if(this.state.isModelLoaded) this.model.dispose();
+    if(this.player.isPlaying())this.player.stop();
+    if(this.wavesurfer) { this.wavesurfer.stop(); }
     this.setState({
       userDecision: 0, 
       // isAnonymousUserSignedIn: false,
-      isExampleListOpen: false,
+      isExampleListDialogOpen: false,
       isUploading: false,
       isLoading: false,
       isTranscribing: false,
@@ -347,6 +404,7 @@ class MidiTrainer extends Component {
       isPaused: false,
       tfBackend: 'webgl',
       fileMidiExample: '',
+      fileAudioExample: '',
     });
     this.visualizer = null;
     this.wavesurfer = null;
@@ -355,7 +413,6 @@ class MidiTrainer extends Component {
     this.midi = null;
     this.midiJSON = null;
     this.noteTableRows = null;
-    this.handlePlayerStop();
   }
   handlePlayerStart() {
     // user can 'restart' at any time
@@ -405,7 +462,7 @@ class MidiTrainer extends Component {
     // }
 
     // start transcribing
-    return this.model.transcribeFromAudioFile(this.fileInputRef.current.files[0]);
+    return this.model.transcribeFromAudioFile(this.fileInput);
   }
   async getNoteTableRows() {
     let id = 0, rows = [], note;
@@ -445,6 +502,9 @@ class MidiTrainer extends Component {
         progressColor: '#BA68C8'
       });
       this.wavesurfer.loadBlob(this.fileInput);
+      // disable mouse interaction to sync with mm visualization
+      this.wavesurfer.toggleInteraction(); 
+      this.wavesurfer.setMute(true); 
     }
 
     this.setState({ isLoading: false, });
@@ -472,7 +532,7 @@ class MidiTrainer extends Component {
               </Typography>
             ) : (
               <Typography variant="body1" align="center" className="midi-trainer-body">
-                The file using is: <br/> "{ (this.state.userDecision === 1) ? this.state.fileMidiExample : this.fileInput.name}"
+                The file using is: <br/> "{ (this.state.userDecision === 1) ? this.state.fileMidiExample : (this.state.userDecision===4) ? this.state.fileAudioExample : this.fileInput.name}"
               </Typography>
             )}
           </Grid>
@@ -496,22 +556,23 @@ class MidiTrainer extends Component {
                     onChange={()=>this.handleUpload()}
                   />
                   <label htmlFor="audioInputFileButton">
-                    <Button disabled={this.state.isUploading} fullWidth={true} color="secondary" variant="contained" component="span" className={classes.button}>
+                    <Button disabled={this.state.isUploading || this.state.isTranscribing} fullWidth={true} color="secondary" variant="contained" component="span" className={classes.button}>
                       {!this.state.isUploading?"Upload":"Uploading"}
                     </Button>
                   </label>
                 </Grid>
 
                 <Grid item xs={6} sm={6}>
-                  <Button fullWidth={true} color="secondary" variant="contained" className={classes.button} onClick={() => this.handleExampleListOpen()}>
+                  <Button disabled={this.state.isTranscribing} fullWidth={true} color="secondary" variant="contained" className={classes.button} onClick={() => this.handleExampleListDialogOpen()}>
                     Examples
                   </Button>
-                    <ExampleMidiDialog 
+                    <ExampleListDialog 
+                      classes = { classes } // works
+                      isExampleListDialogOpen = { this.state.isExampleListDialogOpen }
                       fileMidiExample = { this.state.fileMidiExample }
-                      handleExampleFileSelection = { this.handleSelection }
-                      handleExampleListClose = { () => this.handleExampleListClose() }
-                      isExampleListOpen = { this.state.isExampleListOpen }
-                      classes = { classes }
+                      fileAudioExample = { this.state.fileAudioExample }
+                      handleExampleListDialogClose = { () => this.handleExampleListDialogClose() }
+                      handleExampleFileSelection = { this.handleExampleFileSelection }
                     />
                 </Grid>
 
@@ -523,7 +584,8 @@ class MidiTrainer extends Component {
               <Typography>
                 You can upload a midi file or other audio file. <br/> <br/>
                 If you upload a non-midi audio file, this app will use a NN to transcribe the music for you. <br/> <br/>
-                Currently the maximum duration supported is around 220 seconds. Will improve in the future.
+                Currently the maximum duration supported stably is around 220 seconds. Will improve in the future. <br/> <br/>
+                Note: if you want to fully refresh this page, try to close all tabs and reopen.
               </Typography>
             </Grid>
 
@@ -531,7 +593,7 @@ class MidiTrainer extends Component {
             <Grid item xs={6} sm={6} lg={6}>
             { (this.state.userDecision > 0) &&
               <Typography variant="body1" align="center" className="midi-trainer-body">
-                The file chosen is: <br/> "{ (this.state.userDecision === 1) ? this.state.fileMidiExample : this.fileInput.name}"
+                The file chosen is: <br/> "{ (this.state.userDecision === 1) ? this.state.fileMidiExample : (this.state.userDecision === 4) ? this.state.fileAudioExample : this.fileInput.name}"
               </Typography>
             }
             </Grid>
@@ -544,21 +606,21 @@ class MidiTrainer extends Component {
               <Grid container spacing={16} direction="row" align="center" justify="center" style={{margin: 'auto', width:'100%'}}>
 
                 <Grid item xs={4} sm={4}>
-                  <Button fullWidth={true} disabled={!this.state.isPlaying} variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handlePlayerStop()}>
+                  <Button fullWidth={true} disabled={!this.state.isPlaying} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStop()}>
                   <StopIcon className="leftIcon midi-trainer-leftIcon" />
                   Stop
                   </Button>
                 </Grid>
 
                 <Grid item xs={4} sm={4}>
-                  <Button fullWidth={true} variant="contained" color="secondary" className="button midi-trainer-button" onClick={() => this.handlePlayerStart()}>
+                  <Button fullWidth={true} variant="contained" color="primary" className="button midi-trainer-button" onClick={() => this.handlePlayerStart()}>
                   <PlayArrowIcon className="leftIcon midi-trainer-leftIcon" />
                   Play
                   </Button>
                 </Grid>
 
                 <Grid item xs={4} sm={4}>
-                  <Button fullWidth={true} disabled={!this.state.isPlaying && !this.state.isPaused} variant="contained" className="button midi-trainer-button" onClick={() => this.handlePlayerResumePause()}>
+                  <Button color="primary" fullWidth={true} disabled={!this.state.isPlaying && !this.state.isPaused} variant="contained" className="button midi-trainer-button" onClick={() => this.handlePlayerResumePause()}>
                     {(this.state.isPaused) ? 
                       (<PlayArrowIcon className="leftIcon midi-trainer-leftIcon" />) :
                       (<PauseIcon className="leftIcon midi-trainer-leftIcon" />)
@@ -621,7 +683,6 @@ class MidiTrainer extends Component {
                 </Button>
               ):(
                 <Button disabled variant="contained" color="secondary" className="button midi-trainer-button">
-                  {/* TODO: test progress */}
                   <CircularProgress className={classes.progress} />
                   Transcribing
                 </Button>
@@ -641,7 +702,7 @@ class MidiTrainer extends Component {
             }
 
             {/* Additional reactions to User's decision if uploaded non-midi audio file */}
-            { (this.state.userDecision===3) &&
+            { (this.state.userDecision===3 || this.state.userDecision===4) &&
                 <Grid item xs={6} sm={6} lg={6}>
                   <FormControlLabel
                     control={
@@ -655,10 +716,15 @@ class MidiTrainer extends Component {
                     label="Use CPU as Tensorflow backend"
                   />
                   <Typography variant="body1" align="center" className="midi-trainer-body">
-                    A non-midi audio file is detected. This app uses a piano transcription neural network model.
+                    A non-midi audio file is detected.
+                    Transcription is done by a neural network model and will slow down the device.
+                    Use short recordings of piano to get better experience. <br/>
+                    Use CPU if file longer than about 2 min or if this page crashes with default one. <br/>
+                    (But there is no guarantee that everything works properly for files longer than 3 min) <br/> <br/>
+                  </Typography>
+                  <Typography variant="body2" align="center" className="midi-trainer-body">
                     Use the switch above to toggle tensorflow backend of the neural network model.
-                    Use CPU if the file is very large (longer than 2.5 min for mp3 file).
-                    But CPU backend will be around 10 times slower. (It takes CPU backend around 700s to transcribe a 3 min mp3 file) <a href="https://github.com/snowme34/tone-the-ear/issues/21">Why</a>?<br/>
+                    CPU backend will be around 10 times slower. (It takes CPU backend around 700s to transcribe a 3 min mp3 file) <a href="https://github.com/snowme34/tone-the-ear/issues/21">Why</a>?<br/>
                     The accuracy may decrease if the file contains different instruments or is very complicated.  <br/> <br/>
                   </Typography>
                   <Typography variant="subtitle2" align="center" className="midi-trainer-body">
