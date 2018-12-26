@@ -495,7 +495,7 @@ class MidiTrainer extends Component {
     });
 
     // TODO: figure out a way to output midi waveform
-    if(this.state.userDecision===3) {
+    if(this.state.userDecision===3 || this.state.userDecision===4) {
       this.wavesurfer = WaveSurfer.create({
         container: '#sp-container',
         waveColor: '#64B5F6',
@@ -645,7 +645,7 @@ class MidiTrainer extends Component {
                  />
             </Grid>
             {/* TODO: prompt user that spectrum will be available if uploaded non-midi audio */}
-            { (this.state.userDecision===3) &&
+            { (this.state.userDecision===3 || this.state.userDecision===4) &&
               <Grid item xs={10} sm={10} lg={10} className={classes.CanvasCardGrid}>
                   <CanvasCard
                     className={classes.CanvasCard}
