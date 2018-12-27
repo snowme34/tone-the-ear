@@ -7,7 +7,8 @@ import blue from '@material-ui/core/colors/blue';
 import { Provider } from 'react-redux'
 import { createStore, combineReducers, compose } from 'redux'
 import { reactReduxFirebase, firebaseReducer } from 'react-redux-firebase'
-import firebase from 'firebase'
+import firebase from 'firebase/app';
+import 'firebase/storage';
 import logo from './logo.svg';
 import './App.css';
 import TopMenu from './components/TopMenu'
