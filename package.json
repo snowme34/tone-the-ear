@@ -7,8 +7,6 @@
     "@material-ui/core": "^3.6.2",
     "@material-ui/icons": "^3.0.1",
     "firebase": "^5.7.0",
-    "midi-player-js": "^2.0.5",
-    "midi-writer-js": "^1.5.2",
     "midiconvert": "^0.4.7",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
@@ -20,7 +18,6 @@
     "react-virtualized": "^9.21.0",
     "redux": "^4.0.1",
     "soundfont-player": "^0.11.0",
-    "teoria": "^2.5.0",
     "tone": "^0.12.80",
     "typescript": "^3.2.2",
     "wavesurfer.js": "^2.1.1"
