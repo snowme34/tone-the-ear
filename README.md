@@ -65,6 +65,7 @@ Transcription Practice with non-midi audio file:
 * Add mutiple 'pages' to this single page web app using [react-router-dom](https://reacttraining.com/react-router/web/guides/quick-start)
 * Connect thie app to Firebase using [react-redux-firebase](https://github.com/prescottprue/react-redux-firebase)
   * Using high order component
+* Write Python script using [Mido Library](https://mido.readthedocs.io/en/latest/) to generate the list of example files
 * Retrieve example files from Firebase's storage
 * Combine React's ref forwarding technique and recompose utility to interoperate third-party libraries with a component that takes a reference as parameter for its child component
 * Use react virtualized table to display large content
