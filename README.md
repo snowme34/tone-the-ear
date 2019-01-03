@@ -2,7 +2,7 @@
 
 [demo link](https://tone-the-ear.some-cs-student.com) | [alternative demo link](https://demo-tone-the-ear.snowme34.com/)
 
-A small Progressive Web App about ear training. First React app project of a student.
+A small Progressive Web App about ear training. 
 
 ## Features
 
